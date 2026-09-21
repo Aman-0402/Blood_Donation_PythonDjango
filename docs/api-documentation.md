@@ -77,6 +77,24 @@ completed, cancelled, rejected: final
 
 Requests cannot be deleted (audit trail). Blood banks will get their processing/complete transitions in Phase 7; notifications on status changes arrive in Phase 10.
 
+## Hospitals (Phase 6)
+
+Hospital payload: `id`, `user`, `username`, `name`, `address`, `city`, `license_number` (unique), `is_verified` (read-only, mirrors `User.is_verified`), `created_at`, `updated_at`. `user` and `is_verified` cannot be set by the client.
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | `/hospitals/` | hospital | Create own profile (one per account). Required: `name`, `city`, `license_number`. |
+| GET | `/hospitals/me/` | hospital | Own profile (`404` until created). |
+| PUT / PATCH | `/hospitals/me/` | hospital | Update own profile. |
+| GET | `/hospitals/me/dashboard/` | hospital | `profile`, `is_verified`, `request_counts` (every status), `active_requests`, `active_request_list` (5), `recent_requests` (5), `available_blood` (units per blood group across all banks, expired excluded, all 8 groups listed), `unread_notifications`. Works while unverified. |
+| GET | `/hospitals/blood-availability/` | verified hospital, admin | Usable stock per blood bank and blood group. Optional `?blood_group=<id>`, `?city=<name>` (case-insensitive). Unverified hospitals get `403`. Returns only bank name, city, blood group and units (no personal data). |
+| GET | `/hospitals/`, `/hospitals/{id}/` | admin | Browse hospitals. `?verified=true|false` filters by verification. |
+| POST | `/hospitals/{id}/verify/`, `/hospitals/{id}/unverify/` | admin | Set the hospital account's verification. |
+
+Hospitals request blood through `/requests/` (Phase 5): they need a profile and a verified account. Their request list, tracking, cancel and history are the same endpoints, scoped to their own requests.
+
+Usable stock rule (`inventory/services.py`): status `available` and `expiry_date` strictly after today (a unit expires on its expiry date), summed across batches.
+
 ## Reference data and admin lookups (Phase 2, permissions updated in Phase 3)
 
 | Method | Path | Auth | Description |
@@ -84,4 +102,4 @@ Requests cannot be deleted (audit trail). Blood banks will get their processing/
 | GET | `/blood-groups/` | any user | The 8 blood groups. |
 | GET | `/users/` | admin | User list (no passwords). |
 
-Read-only admin-only placeholder lists (superseded module by module in later phases): `/donations/`, `/inventory/`, `/notifications/`, `/bloodbanks/`, `/hospitals/`.
+Read-only admin-only placeholder lists (superseded module by module in later phases): `/donations/`, `/inventory/`, `/notifications/`, `/bloodbanks/`.

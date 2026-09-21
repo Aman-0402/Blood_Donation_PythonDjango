@@ -54,11 +54,14 @@ class ApiAccessTests(TestCase):
 
     def test_write_methods_not_allowed(self):
         self.client.force_authenticate(make_user(Role.ADMIN))
-        read_only = [u for u in ADMIN_ONLY_ENDPOINTS if u != '/api/donors/']
+        profile_endpoints = ('/api/donors/', '/api/hospitals/')
+        read_only = [u for u in ADMIN_ONLY_ENDPOINTS if u not in profile_endpoints]
         for url in read_only:
             with self.subTest(url=url):
                 self.assertEqual(self.client.post(url, {}).status_code, 405)
-        self.assertEqual(self.client.post('/api/donors/', {}).status_code, 403)
+        for url in profile_endpoints:
+            with self.subTest(url=url):
+                self.assertEqual(self.client.post(url, {}).status_code, 403)
 
     def test_user_payload_excludes_password(self):
         self.client.force_authenticate(make_user(Role.ADMIN))

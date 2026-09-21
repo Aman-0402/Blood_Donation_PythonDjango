@@ -185,12 +185,44 @@ Tests:
 - The live test caught a real ordering bug (unverified hospital without a profile got 400 instead of 403); fixed by checking verification before validation, with a regression test
 - Frontend: lint clean, build succeeds. Not exercised in a real browser.
 
-Git commit: see next entry
-Git push: see next entry
+Git commit: a8d6c6ed791c24c89282945d52fcd6152483381f
+Git push: Successful
 
 Issues / decisions:
 - Cap of 100 units per request is my assumption (guard against nonsense values); easy to change in `bloodrequests/models.py`.
 - Only admins move requests forward for now. Blood banks get processing/completion in Phase 7; automatic matching in Phase 9.
 - Notifications on request events are not sent yet (Phase 10).
+
+---
+
+## Phase 6 — Hospital Module
+
+Status: Completed
+Date: 2026-09-22
+Completed:
+- Backend: hospital profile create/read/update, admin verification (verify/unverify) and admin browse with a verified filter, hospital dashboard, blood availability search
+- Verification gate: unverified hospitals cannot create requests (Phase 5) or search availability; admin unverify takes effect immediately
+- Reusable stock service (`inventory/services.py`): usable stock excludes expired units and non-available statuses, sums batches, supports blood group and city filters
+- Availability responses contain only bank name, city, blood group and units (no personal data)
+- Frontend (Axios): hospital dashboard (verification banner, request stats, stock by blood group, recent requests), profile form, availability search, admin hospital verification page; hospital nav and routes reuse the Phase 5 request pages
+- API docs updated
+
+Files changed:
+- backend/apps/hospitals/{views,serializers,test_api}.py, backend/apps/inventory/{services,test_services}.py, backend/apps/testing.py, backend/apps/accounts/test_api.py
+- frontend/src/pages/hospital/*, pages/admin/AdminHospitals.jsx, services/hospitals.js, layouts/navConfig.js, routes/AppRoutes.jsx
+- docs/api-documentation.md, docs/development-progress.md, Agent.md
+
+Tests:
+- Backend: 171 tests pass (34 new: profile role gating/duplicate/validation/spoofing/license uniqueness, verification permissions and end-to-end request gating, dashboard counts/isolation/stock/notifications, availability filters/expiry/permissions/params/privacy, stock service boundaries)
+- Live smoke test against running Django + MySQL: 16 checks passed, including expired inventory being excluded; test data removed afterwards
+- Frontend: lint clean, build succeeds. Not exercised in a real browser.
+
+Git commit: see next entry
+Git push: see next entry
+
+Issues / decisions:
+- Doc.md section 3.4 lists "manage authorized staff" for hospitals, but no phase covers it. Not implemented; needs a decision (likely a future addition).
+- Availability search requires a verified hospital. That restriction is my choice, consistent with the request gate.
+- Test-only finding: `force_authenticate` reuses a stale user object, so tests that change verification mid-test must re-fetch the user.
 
 ---

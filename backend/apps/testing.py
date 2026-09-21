@@ -49,3 +49,14 @@ def make_bloodbank(**kwargs):
     kwargs.setdefault('city', 'Pune')
     kwargs.setdefault('license_number', f'B-{n}')
     return BloodBank.objects.create(**kwargs)
+
+
+def make_inventory(bloodbank=None, group='B+', units=5, days_to_expiry=35, **kwargs):
+    from apps.inventory.models import BloodInventory
+
+    bloodbank = bloodbank or make_bloodbank()
+    kwargs.setdefault('collection_date', today() - timedelta(days=1))
+    kwargs.setdefault('expiry_date', today() + timedelta(days=days_to_expiry))
+    return BloodInventory.objects.create(
+        bloodbank=bloodbank, blood_group=blood_group(group), units=units, **kwargs
+    )

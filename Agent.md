@@ -4,7 +4,7 @@ Quick top-level view of what the AI agent has done and what remains. `docs/devel
 
 ## Current status
 
-Phase 5 complete. User approved Phases 3 to 6 in one go, each committed and pushed separately. Phase 6 is next.
+Phase 6 complete. User approved Phases 3 to 6, then Phases 7 to 9, each committed and pushed separately. Phase 7 is next.
 
 ## Completed
 
@@ -17,10 +17,15 @@ Phase 5 complete. User approved Phases 3 to 6 in one go, each committed and push
 
 - **Phase 5 — Blood requests.** Create/edit/cancel, strict admin status workflow with audit history, owner-scoped access, hospital verification gate, frontend list/form/detail. 137 backend tests, live smoke test passed (it caught and fixed a 400-vs-403 ordering bug).
 
+- **Phase 6 — Hospital module.** Profile, admin verification, dashboard, verified-only availability search, reusable expired-aware stock service, frontend pages. 171 backend tests, live smoke test passed.
+
 ## In progress / next
 
-- Phase 6: hospital module (profile, verification, dashboard, availability search)
-- Phases 7 to 17: not approved yet, ask before starting
+- Phase 7: blood bank module (approved)
+- Phase 8: blood donation module (approved)
+- Phase 9: blood search and matching (approved)
+- Phases 10 to 17: not approved yet, ask before starting
+- Open item: hospital "manage authorized staff" (Doc.md 3.4) is not covered by any phase
 
 ## Decisions and assumptions
 
