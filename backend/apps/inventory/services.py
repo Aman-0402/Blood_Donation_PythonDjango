@@ -77,7 +77,9 @@ def _check_units(units):
         raise ValidationError(f'Units must be between 1 and {MAX_UNITS_PER_OPERATION}.')
 
 
-def record_collection(bloodbank, blood_group, units, collection_date=None, expiry_date=None, user=None, note=''):
+def record_collection(
+    bloodbank, blood_group, units, collection_date=None, expiry_date=None, user=None, note='', donation=None
+):
     """Add a new batch of collected blood and log it."""
     _check_units(units)
     today = timezone.localdate()
@@ -99,7 +101,7 @@ def record_collection(bloodbank, blood_group, units, collection_date=None, expir
         )
         InventoryTransaction.objects.create(
             bloodbank=bloodbank, blood_group=blood_group, batch=batch, type=TxType.COLLECTION,
-            units=units, note=note, created_by=user,
+            units=units, note=note, created_by=user, donation=donation,
         )
     return batch
 

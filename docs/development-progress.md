@@ -251,8 +251,8 @@ Tests:
 - Live smoke test against running Django + MySQL: 27 checks passed across the whole path (verify bank, collect, adjust, request approve, accept, dispatch, complete, ledger links, walk-in issue, expire sweep); test data removed afterwards
 - Frontend: lint clean, build succeeds. Not exercised in a real browser.
 
-Git commit: see next entry
-Git push: see next entry
+Git commit: 07a96f763d72c08109c08abfe88ed364db07a7b6
+Git push: Successful
 
 Issues / decisions:
 - Caught during development: a viewset method named `dispatch` would have replaced DRF's request dispatcher; the action is `dispatch_blood` with URL `/dispatch/`.
@@ -262,5 +262,42 @@ Issues / decisions:
 - Shelf life default of 35 days, 1000-unit operation cap and the 7-day "expiring soon" window are my assumptions.
 - Donations are not yet linked to inventory: Phase 8 will call `record_collection` when a donation completes.
 - Bank "dashboard" statistics belong to Phase 11; Phase 7 provides the stock overview and ledger instead.
+
+---
+
+## Phase 8 — Blood Donation Module
+
+Status: Completed
+Date: 2026-09-22
+Completed:
+- Backend: donors schedule donations with a verified blood bank; donors cancel; banks complete or reject; role-scoped list/detail (donor own, bank own, admin all)
+- Scheduling rules enforced on the server: date window, verified bank, donor available, one scheduled donation at a time, eligibility judged on the donation date (reuses the Phase 4 engine)
+- Completion is one atomic step (`donations/services.py`): status, new inventory batch plus a ledger entry linked to the donation, and the donor's `last_donation_date` (never moved backwards); any failure rolls everything back; row locks make a double complete safe
+- Donor history and dashboard update automatically from completed donations; eligibility resets for the donation interval
+- Bank directory endpoint (verified banks, organisation details only) for the donor's bank picker
+- Privacy: only the booked bank (and admin) sees donor name and phone
+- Frontend (Axios): donor schedule page and cancel from history; bank donation queue with complete (units) and reject (reason); nav and routes
+- API and database docs updated
+
+Files changed:
+- backend/apps/donations/{models,services,serializers,views,test_api,test_concurrency}.py + migration, backend/apps/inventory/{models,services}.py + migration, backend/apps/bloodbanks/views.py, backend/apps/accounts/test_api.py, backend/config/settings.py, backend/.env.example
+- frontend/src/pages/donor/{ScheduleDonation,DonorDonations}.jsx, pages/bank/BankDonations.jsx, services/donations.js, layouts/navConfig.js, routes/AppRoutes.jsx
+- docs/*, Agent.md
+
+Tests:
+- Backend: 261 tests pass (38 new: scheduling validation matrix, eligibility on the donation date, one-at-a-time rule, spoofing, cancel/complete/reject state rules, cross-bank isolation, privacy of contact fields, completion updating inventory + ledger + donor history + eligibility, full rollback on failure, directory) plus a real-thread test where two simultaneous completes add stock exactly once
+- Live smoke test against running Django + MySQL: 30 checks passed across schedule, complete, ledger link, eligibility lockout, rebook after interval, cancel and reject; test data removed afterwards
+- Frontend: lint clean, build succeeds. Not exercised in a real browser.
+
+Git commit: see next entry
+Git push: see next entry
+
+Issues / decisions:
+- Assumptions (configurable or easy to change): quantity defaults to 1 unit and is set by the bank on completion (max 10); bookings up to 90 days ahead; at most one scheduled donation per donor.
+- Banks cannot record walk-in donations for donors who did not book (would need a privacy-safe donor lookup, which belongs with Phase 9).
+- A donation can only be completed on or after its date. A booking left uncompleted past the shelf life cannot be completed (it fails cleanly); the bank should reject it.
+- Blood group cannot change on the donor profile once donations exist (Phase 4 rule), which keeps donation blood groups consistent.
+- Notifications for scheduling/completion are not sent yet (Phase 10).
+- Smoke-script slip (not a product bug): tried booking day 91, beyond the 90-day horizon; day 90 is the first eligible date after a donation and is allowed.
 
 ---

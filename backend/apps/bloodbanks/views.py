@@ -1,5 +1,6 @@
 from rest_framework import mixins, viewsets
 from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from apps.accounts.permissions import IsAdminRole, IsBloodBank
@@ -9,6 +10,7 @@ from .models import BloodBank
 from .serializers import BloodBankSerializer
 
 BANK_ACTIONS = ('create', 'me')
+DIRECTORY_FIELDS = ('id', 'name', 'city', 'address')
 
 
 class BloodBankViewSet(
@@ -22,6 +24,8 @@ class BloodBankViewSet(
     def get_permissions(self):
         if self.action in BANK_ACTIONS:
             return [IsBloodBank()]
+        if self.action == 'directory':
+            return [IsAuthenticated()]
         return [IsAdminRole()]
 
     def get_queryset(self):
@@ -33,6 +37,15 @@ class BloodBankViewSet(
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+    @action(detail=False, methods=['get'])
+    def directory(self, request):
+        """Verified banks only, organisation details only. Any signed-in user can browse (e.g. donors picking where to donate)."""
+        banks = BloodBank.objects.filter(user__is_verified=True).order_by('name')
+        city = request.query_params.get('city')
+        if city:
+            banks = banks.filter(city__iexact=city)
+        return Response(list(banks.values(*DIRECTORY_FIELDS)))
 
     @action(detail=False, methods=['get', 'put', 'patch'], url_path='me')
     def me(self, request):

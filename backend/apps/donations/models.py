@@ -1,6 +1,8 @@
 from django.core.exceptions import ValidationError
 from django.db import models
 
+MAX_DONATION_UNITS = 10
+
 
 class Donation(models.Model):
     class Status(models.TextChoices):
@@ -24,13 +26,17 @@ class Donation(models.Model):
     status = models.CharField(
         max_length=20, choices=Status.choices, default=Status.SCHEDULED, db_index=True
     )
+    rejection_reason = models.CharField(max_length=255, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        ordering = ['-donation_date', '-id']
+
     def clean(self):
         errors = {}
-        if self.quantity is not None and self.quantity < 1:
-            errors['quantity'] = 'Quantity must be at least 1.'
+        if self.quantity is not None and not 1 <= self.quantity <= MAX_DONATION_UNITS:
+            errors['quantity'] = f'Quantity must be between 1 and {MAX_DONATION_UNITS}.'
         if self.donor_id and self.blood_group_id and self.donor.blood_group_id != self.blood_group_id:
             errors['blood_group'] = "Blood group must match the donor's blood group."
         if errors:

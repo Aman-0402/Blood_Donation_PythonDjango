@@ -5,6 +5,7 @@ import Login from '../pages/Login'
 import Register from '../pages/Register'
 import RoleHome from '../pages/RoleHome'
 import AdminVerification from '../pages/admin/AdminVerification'
+import BankDonations from '../pages/bank/BankDonations'
 import BankHistory from '../pages/bank/BankHistory'
 import BankHome from '../pages/bank/BankHome'
 import BankInventory from '../pages/bank/BankInventory'
@@ -13,6 +14,7 @@ import BankProfile from '../pages/bank/BankProfile'
 import DonorDashboard from '../pages/donor/DonorDashboard'
 import DonorDonations from '../pages/donor/DonorDonations'
 import DonorProfile from '../pages/donor/DonorProfile'
+import ScheduleDonation from '../pages/donor/ScheduleDonation'
 import BloodAvailability from '../pages/hospital/BloodAvailability'
 import HospitalDashboard from '../pages/hospital/HospitalDashboard'
 import HospitalProfile from '../pages/hospital/HospitalProfile'
@@ -39,6 +41,7 @@ const donorChildren = (
   <>
     <Route path="profile" element={<DonorProfile />} />
     <Route path="donations" element={<DonorDonations />} />
+    <Route path="schedule" element={<ScheduleDonation />} />
   </>
 )
 
@@ -85,6 +88,7 @@ const bankChildren = (
     <Route path="profile" element={<BankProfile />} />
     <Route path="inventory" element={<BankInventory />} />
     <Route path="issue" element={<BankIssue />} />
+    <Route path="donations" element={<BankDonations />} />
     <Route path="history" element={<BankHistory />} />
     {readOnlyRequestChildren}
   </>

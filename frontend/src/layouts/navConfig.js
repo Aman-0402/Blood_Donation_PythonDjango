@@ -9,6 +9,7 @@ export const NAV_ITEMS = {
     { to: '/donor', label: 'Dashboard', end: true },
     { to: '/donor/profile', label: 'My profile' },
     { to: '/donor/donations', label: 'Donation history' },
+    { to: '/donor/schedule', label: 'Schedule donation' },
   ],
   seeker: [
     { to: '/seeker', label: 'Dashboard', end: true },
@@ -26,6 +27,7 @@ export const NAV_ITEMS = {
     { to: '/bloodbank', label: 'Stock overview', end: true },
     { to: '/bloodbank/profile', label: 'Blood bank profile' },
     { to: '/bloodbank/inventory', label: 'Inventory' },
+    { to: '/bloodbank/donations', label: 'Donations' },
     { to: '/bloodbank/issue', label: 'Issue blood' },
     { to: '/bloodbank/history', label: 'Inventory history' },
     { to: '/bloodbank/requests', label: 'Requests' },

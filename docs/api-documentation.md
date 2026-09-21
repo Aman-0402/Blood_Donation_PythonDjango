@@ -136,6 +136,23 @@ Hospitals request blood through `/requests/` (Phase 5): they need a profile and 
 
 Usable stock rule (`inventory/services.py`): status `available` and `expiry_date` strictly after today (a unit expires on its expiry date), summed across batches.
 
+## Donations (Phase 8)
+
+Donation payload: `id`, `donor`, `bloodbank`, `bloodbank_name`, `blood_group`, `blood_group_name`, `quantity` (units, 1 to 10), `donation_date`, `collection_location`, `status` (`scheduled`, `completed`, `cancelled`, `rejected`), `rejection_reason`, timestamps. Banks and admins additionally get `donor_name` and `donor_phone` (the donor chose to book with that bank); donors never see other donors' data. Lists are newest donation date first, paginated, filter `?status=`.
+
+Only `scheduled` donations can change state: to `completed` (bank), `rejected` (bank) or `cancelled` (donor). Every change is row-locked, so double clicks or concurrent staff cannot apply it twice.
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | `/donations/` | donor | Schedule: `bloodbank` (verified banks only), `donation_date` (today up to `DONATION_MAX_ADVANCE_DAYS`, 90, ahead), optional `collection_location` (defaults to the bank's address). Blood group comes from the donor profile. Rules: donor profile exists (`404`), profile is available, only one scheduled donation at a time, and eligibility is evaluated on the donation date (age range and the interval since the last donation). `400` with the reasons otherwise. |
+| GET | `/donations/`, `/donations/{id}/` | donor (own), verified bank (its own), admin (all) | Others get `404`. |
+| POST | `/donations/{id}/cancel/` | donor (owner) | `scheduled` -> `cancelled`. |
+| POST | `/donations/{id}/complete/` | verified bank (its own) | Optional `quantity` (default 1). Not allowed before the donation date. In one transaction: status -> `completed`, a new inventory batch is added with a ledger entry linked to the donation, and the donor's `last_donation_date` moves forward (never backwards). If any step fails (for example the collection date is past the shelf life) nothing changes. |
+| POST | `/donations/{id}/reject/` | verified bank (its own) | Body `reason` (required). `scheduled` -> `rejected`; no stock change. The donor can book again. |
+| GET | `/bloodbanks/directory/` | any signed-in user | Verified banks only: `id`, `name`, `city`, `address`. Optional `?city=`. |
+
+Admins are read-only here (`403` on actions). Eligibility and history feed the donor endpoints from Phase 4: completed donations count toward `total_donations` and push `next_eligible_date` out by the donation interval.
+
 ## Reference data and admin lookups (Phase 2, permissions updated in Phase 3)
 
 | Method | Path | Auth | Description |
@@ -143,4 +160,4 @@ Usable stock rule (`inventory/services.py`): status `available` and `expiry_date
 | GET | `/blood-groups/` | any user | The 8 blood groups. |
 | GET | `/users/` | admin | User list (no passwords). |
 
-Read-only admin-only placeholder lists (superseded module by module in later phases): `/donations/`, `/notifications/`.
+Read-only admin-only placeholder lists (superseded module by module in later phases): `/notifications/`.

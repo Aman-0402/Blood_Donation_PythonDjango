@@ -4,7 +4,7 @@ Quick top-level view of what the AI agent has done and what remains. `docs/devel
 
 ## Current status
 
-Phase 7 complete. User approved Phases 3 to 6, then Phases 7 to 9, each committed and pushed separately. Phase 8 is next.
+Phase 8 complete. User approved Phases 3 to 6, then Phases 7 to 9, each committed and pushed separately. Phase 9 is next.
 
 ## Completed
 
@@ -21,9 +21,10 @@ Phase 7 complete. User approved Phases 3 to 6, then Phases 7 to 9, each committe
 
 - **Phase 7 — Blood bank module.** Bank profile + verification, ledger-backed transaction-safe inventory (collect, issue FIFO, expire, adjust), bank request fulfilment (accept/dispatch/complete/release) with patient-data privacy, `expire_blood` command, frontend pages. 223 backend tests incl. real-thread concurrency tests, live smoke test passed.
 
+- **Phase 8 — Donations.** Donors schedule/cancel, banks complete/reject; completion atomically updates status, inventory (+ledger link) and donor history; eligibility judged on donation date; bank directory; frontend pages. 261 backend tests incl. real-thread double-complete test, live smoke test passed.
+
 ## In progress / next
 
-- Phase 8: blood donation module (approved)
 - Phase 9: blood search and matching (approved)
 - Phases 10 to 17: not approved yet, ask before starting
 - Open item: hospital "manage authorized staff" (Doc.md 3.4) is not covered by any phase

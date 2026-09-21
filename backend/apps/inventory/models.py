@@ -75,6 +75,13 @@ class InventoryTransaction(models.Model):
         blank=True,
         related_name='inventory_transactions',
     )
+    donation = models.ForeignKey(
+        'donations.Donation',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='inventory_transactions',
+    )
     note = models.CharField(max_length=255, blank=True)
     created_by = models.ForeignKey(
         'accounts.User', on_delete=models.SET_NULL, null=True, blank=True, related_name='+'
