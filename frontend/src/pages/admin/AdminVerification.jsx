@@ -2,10 +2,9 @@ import { useEffect, useState } from 'react'
 import Alert from '../../components/Alert'
 import Button from '../../components/Button'
 import StatusBadge from '../../components/StatusBadge'
-import { listHospitals, setHospitalVerified } from '../../services/hospitals'
 import { extractError } from '../../utils/errors'
 
-function AdminHospitals() {
+function AdminVerification({ title, fetchList, setVerified }) {
   const [filter, setFilter] = useState('false')
   const [page, setPage] = useState(1)
   const [data, setData] = useState(null)
@@ -16,14 +15,14 @@ function AdminHospitals() {
 
   useEffect(() => {
     let active = true
-    listHospitals({ page, ...(filter && { verified: filter }) })
+    fetchList({ page, ...(filter && { verified: filter }) })
       .then((res) => active && setData(res))
       .catch((err) => active && setError(extractError(err)))
       .finally(() => active && setLoading(false))
     return () => {
       active = false
     }
-  }, [page, filter, reloadKey])
+  }, [fetchList, page, filter, reloadKey])
 
   const changeFilter = (value) => {
     setLoading(true)
@@ -31,11 +30,11 @@ function AdminHospitals() {
     setFilter(value)
   }
 
-  const toggle = async (hospital) => {
+  const toggle = async (org) => {
     setError('')
-    setBusyId(hospital.id)
+    setBusyId(org.id)
     try {
-      await setHospitalVerified(hospital.id, !hospital.is_verified)
+      await setVerified(org.id, !org.is_verified)
       setReloadKey((k) => k + 1)
     } catch (err) {
       setError(extractError(err))
@@ -48,7 +47,7 @@ function AdminHospitals() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-semibold text-gray-900">Hospitals</h1>
+      <h1 className="text-2xl font-semibold text-gray-900">{title}</h1>
       <Alert type="error">{error}</Alert>
       <div>
         <label htmlFor="verified-filter" className="mr-2 text-sm text-gray-600">
@@ -66,7 +65,7 @@ function AdminHospitals() {
         </select>
       </div>
       {data && data.results.length === 0 ? (
-        <p className="text-sm text-gray-500">No hospitals found.</p>
+        <p className="text-sm text-gray-500">Nothing found.</p>
       ) : (
         data && (
           <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
@@ -119,4 +118,4 @@ function AdminHospitals() {
   )
 }
 
-export default AdminHospitals
+export default AdminVerification

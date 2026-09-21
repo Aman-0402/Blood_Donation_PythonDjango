@@ -1,4 +1,5 @@
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db.models import Q
 from rest_framework import mixins, serializers, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
@@ -6,7 +7,9 @@ from rest_framework.response import Response
 
 from apps.accounts.models import Role
 from apps.accounts.permissions import IsAdminRole, role_permission
+from apps.bloodbanks.access import get_bank
 
+from . import fulfillment
 from .models import BloodRequest
 from .serializers import (
     BloodRequestSerializer,
@@ -17,6 +20,10 @@ from .workflow import OWNER_CANCELLABLE, change_status, record_creation
 
 IsRequester = role_permission(Role.SEEKER, Role.HOSPITAL)
 IsRequesterOrAdmin = role_permission(Role.SEEKER, Role.HOSPITAL, Role.ADMIN)
+IsAnyRequestParty = role_permission(Role.SEEKER, Role.HOSPITAL, Role.ADMIN, Role.BLOODBANK)
+IsBank = role_permission(Role.BLOODBANK)
+
+BANK_ACTIONS = ('accept', 'release', 'dispatch_blood', 'complete')
 
 
 class BloodRequestViewSet(
@@ -33,6 +40,10 @@ class BloodRequestViewSet(
             return [IsRequester()]
         if self.action == 'set_status':
             return [IsAdminRole()]
+        if self.action in BANK_ACTIONS:
+            return [IsBank()]
+        if self.action in ('list', 'retrieve'):
+            return [IsAnyRequestParty()]
         return [IsRequesterOrAdmin()]
 
     def get_queryset(self):
@@ -40,7 +51,13 @@ class BloodRequestViewSet(
             'requester', 'hospital', 'blood_group', 'fulfilled_by_bloodbank'
         )
         user = self.request.user
-        if user.role != Role.ADMIN:
+        if user.role == Role.BLOODBANK:
+            bank = get_bank(user)
+            queryset = queryset.filter(
+                Q(status=BloodRequest.Status.APPROVED, fulfilled_by_bloodbank__isnull=True)
+                | Q(fulfilled_by_bloodbank=bank)
+            )
+        elif user.role != Role.ADMIN:
             queryset = queryset.filter(requester=user)
         params = self.request.query_params
         for field in ('status', 'urgency', 'blood_group'):
@@ -76,7 +93,7 @@ class BloodRequestViewSet(
             raise serializers.ValidationError(
                 f'A {instance.status} request cannot be cancelled.'
             )
-        return self._transition(instance, BloodRequest.Status.CANCELLED, request.user, '')
+        return self._transition(change_status, instance.pk, BloodRequest.Status.CANCELLED, request.user, '')
 
     @action(detail=True, methods=['post'], url_path='status')
     def set_status(self, request, pk=None):
@@ -84,20 +101,46 @@ class BloodRequestViewSet(
         serializer = StatusChangeSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         return self._transition(
-            instance,
+            change_status,
+            instance.pk,
             serializer.validated_data['status'],
             request.user,
             serializer.validated_data.get('note', ''),
         )
 
-    @action(detail=True, methods=['get'])
+    @action(detail=True, methods=['get'], permission_classes=[IsRequesterOrAdmin])
     def history(self, request, pk=None):
         instance = self.get_object()
         return Response(RequestStatusHistorySerializer(instance.history.all(), many=True).data)
 
-    def _transition(self, instance, new_status, user, note):
+    @action(detail=True, methods=['post'])
+    def accept(self, request, pk=None):
+        return self._bank_action(fulfillment.accept_request, request)
+
+    @action(detail=True, methods=['post'])
+    def release(self, request, pk=None):
+        return self._bank_action(fulfillment.release_request, request)
+
+    @action(detail=True, methods=['post'], url_path='dispatch')
+    def dispatch_blood(self, request, pk=None):
+        return self._bank_action(fulfillment.dispatch_request, request)
+
+    @action(detail=True, methods=['post'])
+    def complete(self, request, pk=None):
+        return self._bank_action(fulfillment.complete_request, request)
+
+    def _bank_action(self, service, request):
+        bank = get_bank(request.user)
+        instance = self.get_object()
         try:
-            updated = change_status(instance.pk, new_status, user, note)
+            updated = service(instance.pk, bank, request.user)
+        except DjangoValidationError as exc:
+            raise serializers.ValidationError(exc.messages)
+        return Response(self.get_serializer(updated).data)
+
+    def _transition(self, service, request_id, new_status, user, note):
+        try:
+            updated = service(request_id, new_status, user, note)
         except DjangoValidationError as exc:
             raise serializers.ValidationError(exc.messages)
         return Response(self.get_serializer(updated).data)

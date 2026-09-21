@@ -217,12 +217,50 @@ Tests:
 - Live smoke test against running Django + MySQL: 16 checks passed, including expired inventory being excluded; test data removed afterwards
 - Frontend: lint clean, build succeeds. Not exercised in a real browser.
 
-Git commit: see next entry
-Git push: see next entry
+Git commit: cecd7b05e5409736fe109ad0f74363b797fd850a
+Git push: Successful
 
 Issues / decisions:
 - Doc.md section 3.4 lists "manage authorized staff" for hospitals, but no phase covers it. Not implemented; needs a decision (likely a future addition).
 - Availability search requires a verified hospital. That restriction is my choice, consistent with the request gate.
 - Test-only finding: `force_authenticate` reuses a stale user object, so tests that change verification mid-test must re-fetch the user.
+
+---
+
+## Phase 7 — Blood Bank Module
+
+Status: Completed
+Date: 2026-09-22
+Completed:
+- Blood bank profile, `me`, admin verification and browse (same pattern as hospitals); unverified banks can read but not change stock or fulfil requests
+- Transaction-safe inventory (`inventory/services.py`): record collection, issue units (oldest expiry first, all-or-nothing, row-locked), expire lapsed stock, adjust a batch (reason required, zero discards it), usable-stock, summary and expiring-soon queries
+- Append-only ledger `InventoryTransaction` for full inventory history (collection, issue, expired, adjustment), with API and read-only Django admin
+- Request fulfilment by banks (`bloodrequests/fulfillment.py`): accept (one winner under concurrency), dispatch (issues stock and moves to processing atomically), complete, release
+- Privacy: banks see only approved unassigned requests plus their own, and patient/requester details stay hidden until they own the request
+- Management command `expire_blood` for a daily cron
+- Frontend (Axios): bank stock overview, profile, inventory (add units, filter, remove expired, adjust), issue form, ledger history, request pages with bank actions; admin verification page generalised for hospitals and banks; shared `OrgProfileForm`
+- API and database docs updated
+
+Files changed:
+- backend/apps/bloodbanks/{access,serializers,views,test_api}.py, backend/apps/inventory/{models,services,serializers,views,urls,admin,test_api,test_concurrency,test_services}.py + migration + management command, backend/apps/bloodrequests/{workflow,fulfillment,serializers,views,test_fulfillment,test_api}.py, backend/apps/accounts/test_api.py, backend/config/settings.py, backend/.env.example
+- frontend/src/pages/bank/*, pages/admin/AdminVerification.jsx (renamed from AdminHospitals), pages/requests/*, components/OrgProfileForm.jsx, services/{bloodbanks,inventory,requests}.js, layouts/navConfig.js, routes/AppRoutes.jsx
+- docs/*, Agent.md
+
+Tests:
+- Backend: 223 tests pass (52 new bank/inventory/fulfilment tests). Includes two real-thread concurrency tests on MySQL: four parallel issues against 10 units succeed exactly three times with no oversell, and three banks racing to accept one request produce exactly one winner
+- Live smoke test against running Django + MySQL: 27 checks passed across the whole path (verify bank, collect, adjust, request approve, accept, dispatch, complete, ledger links, walk-in issue, expire sweep); test data removed afterwards
+- Frontend: lint clean, build succeeds. Not exercised in a real browser.
+
+Git commit: see next entry
+Git push: see next entry
+
+Issues / decisions:
+- Caught during development: a viewset method named `dispatch` would have replaced DRF's request dispatcher; the action is `dispatch_blood` with URL `/dispatch/`.
+- Accepting a request does not reserve stock; dispatch re-checks and fails cleanly (no partial change) if stock vanished. Reservation could be added later if needed.
+- Added `matched -> approved` to the request workflow so a bank can release a request it cannot fulfil.
+- Admins can still move requests through statuses manually (Phase 5); a manual `matched` without a bank has no assigned bank to dispatch it.
+- Shelf life default of 35 days, 1000-unit operation cap and the 7-day "expiring soon" window are my assumptions.
+- Donations are not yet linked to inventory: Phase 8 will call `record_collection` when a donation completes.
+- Bank "dashboard" statistics belong to Phase 11; Phase 7 provides the stock overview and ledger instead.
 
 ---

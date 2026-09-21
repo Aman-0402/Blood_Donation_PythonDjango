@@ -8,7 +8,7 @@ Status = BloodRequest.Status
 ALLOWED_TRANSITIONS = {
     Status.PENDING: {Status.APPROVED, Status.REJECTED, Status.CANCELLED},
     Status.APPROVED: {Status.MATCHED, Status.REJECTED, Status.CANCELLED},
-    Status.MATCHED: {Status.PROCESSING, Status.CANCELLED},
+    Status.MATCHED: {Status.PROCESSING, Status.APPROVED, Status.CANCELLED},
     Status.PROCESSING: {Status.COMPLETED},
     Status.COMPLETED: set(),
     Status.CANCELLED: set(),
@@ -32,8 +32,10 @@ def record_creation(request, user):
     )
 
 
-def change_status(request_id, new_status, user, note=''):
-    """Move a request to new_status if the workflow allows it. Row-locked so concurrent changes cannot both win."""
+def change_status(request_id, new_status, user, note='', updates=None):
+    """Move a request to new_status if the workflow allows it, optionally setting other fields in the same
+    save. Row-locked so concurrent changes cannot both win."""
+    updates = updates or {}
     with transaction.atomic():
         request = BloodRequest.objects.select_for_update().get(pk=request_id)
         if new_status not in ALLOWED_TRANSITIONS.get(request.status, set()):
@@ -43,7 +45,9 @@ def change_status(request_id, new_status, user, note=''):
             )
         previous = request.status
         request.status = new_status
-        request.save(update_fields=['status', 'updated_at'])
+        for field, value in updates.items():
+            setattr(request, field, value)
+        request.save(update_fields=['status', 'updated_at', *updates])
         RequestStatusHistory.objects.create(
             request=request,
             from_status=previous,

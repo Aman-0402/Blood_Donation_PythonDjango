@@ -14,6 +14,7 @@ function RequestList() {
   const { user } = useAuth()
   const base = `/${user.role}/requests`
   const isAdmin = user.role === ROLES.ADMIN
+  const isBank = user.role === ROLES.BLOODBANK
   const [status, setStatus] = useState('')
   const [page, setPage] = useState(1)
   const [data, setData] = useState(null)
@@ -48,8 +49,10 @@ function RequestList() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-2xl font-semibold text-gray-900">{isAdmin ? 'Blood requests' : 'My blood requests'}</h1>
-        {!isAdmin && (
+        <h1 className="text-2xl font-semibold text-gray-900">
+          {isBank ? 'Open and assigned requests' : isAdmin ? 'Blood requests' : 'My blood requests'}
+        </h1>
+        {!isAdmin && !isBank && (
           <Link to={`${base}/new`} className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700">
             New request
           </Link>

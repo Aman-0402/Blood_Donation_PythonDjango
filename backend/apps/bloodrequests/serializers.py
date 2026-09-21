@@ -44,9 +44,18 @@ class BloodRequestSerializer(ModelCleanMixin, serializers.ModelSerializer):
                 )
         return super().validate(attrs)
 
+    PRIVATE_FIELDS = ('requester', 'requester_username', 'patient_name', 'contact_phone', 'notes')
+
     def to_representation(self, instance):
         data = super().to_representation(instance)
         data['allowed_next_statuses'] = allowed_next(instance.status)
+        request = self.context.get('request')
+        user = getattr(request, 'user', None)
+        if user is not None and user.role == Role.BLOODBANK:
+            bank = getattr(user, 'bloodbank_profile', None)
+            if bank is None or instance.fulfilled_by_bloodbank_id != bank.id:
+                for field in self.PRIVATE_FIELDS:
+                    data.pop(field, None)
         return data
 
 

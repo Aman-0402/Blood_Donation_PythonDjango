@@ -2,7 +2,7 @@ from django.test import TestCase
 from rest_framework.test import APIClient
 
 from apps.accounts.models import Role
-from apps.testing import blood_group, make_hospital, make_user
+from apps.testing import blood_group, make_bloodbank, make_hospital, make_user
 
 from .models import BloodRequest
 from .workflow import ALLOWED_TRANSITIONS, InvalidTransition, change_status
@@ -141,9 +141,13 @@ class ListAndRetrieveTests(TestCase):
         results = client_for(self.admin).get('/api/requests/').json()['results']
         self.assertEqual([r['id'] for r in results], [self.b1.id, self.a2.id, self.a1.id])
 
-    def test_other_roles_forbidden(self):
-        for role in (Role.DONOR, Role.BLOODBANK):
-            self.assertEqual(client_for(make_user(role)).get('/api/requests/').status_code, 403)
+    def test_donors_forbidden(self):
+        self.assertEqual(client_for(make_user(Role.DONOR)).get('/api/requests/').status_code, 403)
+
+    def test_bank_without_profile_or_verification_cannot_list(self):
+        self.assertEqual(client_for(make_user(Role.BLOODBANK)).get('/api/requests/').status_code, 404)
+        unverified = make_bloodbank()
+        self.assertEqual(client_for(unverified.user).get('/api/requests/').status_code, 403)
 
     def test_cannot_read_someone_elses_request(self):
         self.assertEqual(client_for(self.bob).get(f'/api/requests/{self.a1.id}/').status_code, 404)

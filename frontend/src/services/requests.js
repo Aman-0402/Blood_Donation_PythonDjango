@@ -30,6 +30,11 @@ export async function setRequestStatus(id, status, note = '') {
   return data
 }
 
+export async function bankAction(id, action) {
+  const { data } = await api.post(`/requests/${id}/${action}/`)
+  return data
+}
+
 export async function getRequestHistory(id) {
   const { data } = await api.get(`/requests/${id}/history/`)
   return data

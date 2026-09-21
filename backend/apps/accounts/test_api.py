@@ -9,7 +9,6 @@ ADMIN_ONLY_ENDPOINTS = [
     '/api/donors/',
     '/api/hospitals/',
     '/api/bloodbanks/',
-    '/api/inventory/',
     '/api/donations/',
     '/api/notifications/',
 ]
@@ -54,7 +53,7 @@ class ApiAccessTests(TestCase):
 
     def test_write_methods_not_allowed(self):
         self.client.force_authenticate(make_user(Role.ADMIN))
-        profile_endpoints = ('/api/donors/', '/api/hospitals/')
+        profile_endpoints = ('/api/donors/', '/api/hospitals/', '/api/bloodbanks/')
         read_only = [u for u in ADMIN_ONLY_ENDPOINTS if u not in profile_endpoints]
         for url in read_only:
             with self.subTest(url=url):

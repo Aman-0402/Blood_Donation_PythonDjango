@@ -1,6 +1,10 @@
+from datetime import timedelta
+from io import StringIO
+
+from django.core.management import call_command
 from django.test import TestCase
 
-from apps.testing import blood_group, make_bloodbank, make_inventory
+from apps.testing import blood_group, make_bloodbank, make_inventory, today
 
 from .models import BloodInventory
 from .services import stock_by_blood_group, stock_by_bloodbank, usable_stock
@@ -52,3 +56,16 @@ class StockAggregationTests(TestCase):
         self.assertEqual(rows['A+'], 17)
         self.assertEqual(rows['O-'], 2)
         self.assertEqual(rows['AB+'], 0)
+
+
+class ExpireCommandTests(TestCase):
+    def test_command_expires_lapsed_stock_for_every_bank(self):
+        lapsed_a = make_inventory(make_bloodbank(), 'A+', units=3, days_to_expiry=-1, collection_date=today() - timedelta(days=40))
+        lapsed_b = make_inventory(make_bloodbank(), 'B+', units=4, days_to_expiry=0, collection_date=today() - timedelta(days=40))
+        fresh = make_inventory(make_bloodbank(), 'O+', units=5)
+        out = StringIO()
+        call_command('expire_blood', stdout=out)
+        self.assertIn('Expired 7 unit(s)', out.getvalue())
+        for batch, status in ((lapsed_a, 'expired'), (lapsed_b, 'expired'), (fresh, 'available')):
+            batch.refresh_from_db()
+            self.assertEqual(batch.status, status)

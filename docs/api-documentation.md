@@ -60,7 +60,7 @@ Statuses and allowed transitions (enforced in `bloodrequests/workflow.py`, row-l
 ```text
 pending    -> approved | rejected | cancelled
 approved   -> matched  | rejected | cancelled
-matched    -> processing | cancelled
+matched    -> processing | approved (released by the bank) | cancelled
 processing -> completed
 completed, cancelled, rejected: final
 ```
@@ -68,14 +68,55 @@ completed, cancelled, rejected: final
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
 | POST | `/requests/` | seeker, hospital | Create (status `pending`). Seekers must give `patient_name`. Hospitals must have a hospital profile and be verified (`403` if unverified, checked before validation; `400` if no profile); `hospital` is set from the profile. |
-| GET | `/requests/` | seeker, hospital, admin | Own requests (admin: all), newest first, paginated. Filters: `?status=`, `?urgency=`, `?blood_group=<id>`. |
+| GET | `/requests/` | seeker, hospital, admin, verified bank | Own requests (admin: all; bank: open approved plus assigned, see below), newest first, paginated. Filters: `?status=`, `?urgency=`, `?blood_group=<id>`. |
 | GET | `/requests/{id}/` | owner, admin | Detail. Other users get `404`. |
 | PATCH / PUT | `/requests/{id}/` | owner | Edit while `pending` only (`400` otherwise). Admins cannot edit. |
 | POST | `/requests/{id}/cancel/` | owner, admin | Owner: from `pending`/`approved`/`matched`. Admin: any state the workflow allows. |
 | POST | `/requests/{id}/status/` | admin | Body: `status`, optional `note`. `400` with the allowed list on an invalid jump. |
 | GET | `/requests/{id}/history/` | owner, admin | Audit trail: `from_status`, `to_status`, `changed_by_username`, `note`, `created_at`. |
 
-Requests cannot be deleted (audit trail). Blood banks will get their processing/complete transitions in Phase 7; notifications on status changes arrive in Phase 10.
+Requests cannot be deleted (audit trail). Notifications on status changes arrive in Phase 10.
+
+Blood bank fulfilment (Phase 7). Verified banks see `approved` requests nobody has claimed yet, plus requests assigned to them (`404` for anything else). Until a bank owns a request, `requester`, `requester_username`, `patient_name`, `contact_phone` and `notes` are omitted from what it sees. Banks cannot use the requester/admin endpoints (`cancel`, `status`, `history`, create/edit).
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | `/requests/{id}/accept/` | bank | `approved` and unassigned -> `matched`, assigns the bank. Needs enough usable stock of the group. The row is locked, so exactly one bank wins a race. |
+| POST | `/requests/{id}/dispatch/` | assigned bank | `matched` -> `processing`. Issues the requested units from the bank's stock (oldest expiry first) in the same transaction; if stock is short nothing changes (`400`). Ledger entries link to the request. |
+| POST | `/requests/{id}/complete/` | assigned bank | `processing` -> `completed`. |
+| POST | `/requests/{id}/release/` | assigned bank | `matched` -> `approved`, unassigns the bank so another can take it. |
+
+Unverified banks get `403` on all of these and on the request list.
+
+## Blood banks (Phase 7)
+
+Profile payload matches hospitals: `id`, `user`, `username`, `name`, `address`, `city`, `license_number` (unique), `is_verified` (read-only), timestamps.
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | `/bloodbanks/` | bloodbank | Create own profile (one per account). |
+| GET | `/bloodbanks/me/` | bloodbank | Own profile (`404` until created). |
+| PUT / PATCH | `/bloodbanks/me/` | bloodbank | Update own profile. |
+| GET | `/bloodbanks/`, `/bloodbanks/{id}/` | admin | Browse banks. `?verified=true` or `?verified=false`. |
+| POST | `/bloodbanks/{id}/verify/`, `/unverify/` | admin | Set verification. |
+
+## Inventory (Phase 7)
+
+Stock lives in batches (`BloodInventory`: blood group, units left, collection date, expiry date, status `available`/`reserved`/`expired`/`issued`/`discarded`). Every movement is appended to a ledger (`InventoryTransaction`) with signed units. All stock changes run in row-locked transactions (`inventory/services.py`), so concurrent requests cannot oversell; this is covered by tests using real threads on MySQL.
+
+Banks see only their own batches and history; admins can read everything but cannot change stock. Reads work for unverified banks; every write needs a verified bank (`403` otherwise, `404` if no profile).
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | `/inventory/` | verified bank | Record a collection: `blood_group`, `units` (1 to 1000), optional `collection_date` (not future, default today), `expiry_date` (default collection + `BLOOD_SHELF_LIFE_DAYS`, 35; must be after collection and after today), `note`. |
+| GET | `/inventory/`, `/inventory/{id}/` | bank, admin | Batches, soonest expiry first. Filters `?status=`, `?blood_group=`. |
+| POST | `/inventory/issue/` | verified bank | Direct dispatch: `blood_group`, `units`, `note`. Takes from batches closest to expiry first; all-or-nothing (`400` with the available count if short). Emptied batches become `issued`. |
+| POST | `/inventory/expire/` | verified bank | Marks the bank's available batches at or past expiry as `expired`; returns `{expired_units}`. Idempotent. |
+| POST | `/inventory/{id}/adjust/` | verified bank | `delta` (non-zero), `reason` (required). Only `available` batches; cannot go negative; reaching zero marks the batch `discarded`. |
+| GET | `/inventory/summary/` | bank, admin | Usable units per blood group (all 8 listed) with `expiring_within_7_days`. |
+| GET | `/inventory/transactions/` | bank, admin | Ledger, newest first, paginated. Filters `?type=` (collection, issue, expired, adjustment), `?blood_group=`. |
+
+Cron: `python manage.py expire_blood` expires lapsed stock for every bank; schedule it daily.
 
 ## Hospitals (Phase 6)
 
@@ -88,7 +129,7 @@ Hospital payload: `id`, `user`, `username`, `name`, `address`, `city`, `license_
 | PUT / PATCH | `/hospitals/me/` | hospital | Update own profile. |
 | GET | `/hospitals/me/dashboard/` | hospital | `profile`, `is_verified`, `request_counts` (every status), `active_requests`, `active_request_list` (5), `recent_requests` (5), `available_blood` (units per blood group across all banks, expired excluded, all 8 groups listed), `unread_notifications`. Works while unverified. |
 | GET | `/hospitals/blood-availability/` | verified hospital, admin | Usable stock per blood bank and blood group. Optional `?blood_group=<id>`, `?city=<name>` (case-insensitive). Unverified hospitals get `403`. Returns only bank name, city, blood group and units (no personal data). |
-| GET | `/hospitals/`, `/hospitals/{id}/` | admin | Browse hospitals. `?verified=true|false` filters by verification. |
+| GET | `/hospitals/`, `/hospitals/{id}/` | admin | Browse hospitals. `?verified=true` or `?verified=false` filters by verification. |
 | POST | `/hospitals/{id}/verify/`, `/hospitals/{id}/unverify/` | admin | Set the hospital account's verification. |
 
 Hospitals request blood through `/requests/` (Phase 5): they need a profile and a verified account. Their request list, tracking, cancel and history are the same endpoints, scoped to their own requests.
@@ -102,4 +143,4 @@ Usable stock rule (`inventory/services.py`): status `available` and `expiry_date
 | GET | `/blood-groups/` | any user | The 8 blood groups. |
 | GET | `/users/` | admin | User list (no passwords). |
 
-Read-only admin-only placeholder lists (superseded module by module in later phases): `/donations/`, `/inventory/`, `/notifications/`, `/bloodbanks/`.
+Read-only admin-only placeholder lists (superseded module by module in later phases): `/donations/`, `/notifications/`.

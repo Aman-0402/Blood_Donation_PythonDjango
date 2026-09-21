@@ -4,13 +4,14 @@ import Alert from '../../components/Alert'
 import Button from '../../components/Button'
 import StatusBadge from '../../components/StatusBadge'
 import { useAuth } from '../../hooks/useAuth'
-import { cancelRequest, getRequest, getRequestHistory, setRequestStatus } from '../../services/requests'
+import { bankAction, cancelRequest, getRequest, getRequestHistory, setRequestStatus } from '../../services/requests'
 import { extractError } from '../../utils/errors'
 import { ROLES } from '../../utils/roles'
 
 const OWNER_CANCELLABLE = ['pending', 'approved', 'matched']
 
-const fetchRequestAndHistory = (id) => Promise.all([getRequest(id), getRequestHistory(id)])
+const fetchRequestAndHistory = (id, includeHistory) =>
+  Promise.all([getRequest(id), includeHistory ? getRequestHistory(id) : Promise.resolve([])])
 
 function Detail({ label, children }) {
   return (
@@ -26,6 +27,7 @@ function RequestDetail() {
   const { user } = useAuth()
   const base = `/${user.role}/requests`
   const isAdmin = user.role === ROLES.ADMIN
+  const isBank = user.role === ROLES.BLOODBANK
   const [request, setRequest] = useState(null)
   const [history, setHistory] = useState([])
   const [note, setNote] = useState('')
@@ -35,7 +37,7 @@ function RequestDetail() {
 
   useEffect(() => {
     let active = true
-    fetchRequestAndHistory(id)
+    fetchRequestAndHistory(id, !isBank)
       .then(([r, h]) => {
         if (!active) return
         setRequest(r)
@@ -46,7 +48,7 @@ function RequestDetail() {
     return () => {
       active = false
     }
-  }, [id])
+  }, [id, isBank])
 
   const run = async (action) => {
     setError('')
@@ -54,7 +56,7 @@ function RequestDetail() {
     try {
       await action()
       setNote('')
-      const [r, h] = await fetchRequestAndHistory(id)
+      const [r, h] = await fetchRequestAndHistory(id, !isBank)
       setRequest(r)
       setHistory(h)
     } catch (err) {
@@ -67,8 +69,16 @@ function RequestDetail() {
   if (loading) return <p className="text-gray-500">Loading...</p>
   if (!request) return <Alert type="error">{error}</Alert>
 
-  const canEdit = !isAdmin && request.status === 'pending'
-  const canCancel = !isAdmin && OWNER_CANCELLABLE.includes(request.status)
+  const isRequester = !isAdmin && !isBank
+  const canEdit = isRequester && request.status === 'pending'
+  const canCancel = isRequester && OWNER_CANCELLABLE.includes(request.status)
+  const assignedToMe = isBank && request.fulfilled_by_bloodbank != null
+  const bankActions = []
+  if (isBank && request.status === 'approved' && !assignedToMe) bankActions.push(['accept', 'Accept request', 'primary'])
+  if (assignedToMe && request.status === 'matched') {
+    bankActions.push(['dispatch', 'Dispatch blood', 'primary'], ['release', 'Release request', 'danger'])
+  }
+  if (assignedToMe && request.status === 'processing') bankActions.push(['complete', 'Mark delivered', 'primary'])
 
   return (
     <div className="space-y-6">
@@ -107,10 +117,20 @@ function RequestDetail() {
             Cancel request
           </Button>
         )}
+        {bankActions.map(([action, label, variant]) => (
+          <Button key={action} variant={variant} disabled={busy} onClick={() => run(() => bankAction(request.id, action))}>
+            {label}
+          </Button>
+        ))}
         <Link to={base} className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
           Back to list
         </Link>
       </div>
+      {isBank && !assignedToMe && (
+        <Alert type="info">
+          Patient details are shown after your blood bank accepts this request. Accepting requires enough usable stock of this blood group.
+        </Alert>
+      )}
 
       {isAdmin && request.allowed_next_statuses.length > 0 && (
         <section className="space-y-2 rounded-lg border border-gray-200 bg-white p-4">
@@ -140,6 +160,7 @@ function RequestDetail() {
         </section>
       )}
 
+      {!isBank && (
       <section>
         <h2 className="mb-2 text-lg font-medium text-gray-900">History</h2>
         <ol className="space-y-2 border-l-2 border-gray-200 pl-4">
@@ -155,6 +176,7 @@ function RequestDetail() {
           ))}
         </ol>
       </section>
+      )}
     </div>
   )
 }

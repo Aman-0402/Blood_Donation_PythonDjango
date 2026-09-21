@@ -148,6 +148,9 @@ DONOR_MIN_AGE = int(os.getenv('DONOR_MIN_AGE', '18'))
 DONOR_MAX_AGE = int(os.getenv('DONOR_MAX_AGE', '65'))
 DONATION_INTERVAL_DAYS = int(os.getenv('DONATION_INTERVAL_DAYS', '90'))
 
+# Whole blood shelf life used to default a batch's expiry date
+BLOOD_SHELF_LIFE_DAYS = int(os.getenv('BLOOD_SHELF_LIFE_DAYS', '35'))
+
 
 # CORS
 
