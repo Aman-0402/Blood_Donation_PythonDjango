@@ -65,3 +65,33 @@ Notes:
 - Tailwind v4 uses `@tailwindcss/vite` plugin, not the old `postcss.config.js` + `tailwind.config.js` init flow (v4 breaking change)
 
 ---
+
+## Phase 2 — Database & Backend Foundation
+
+Status: Completed
+Date: 2026-09-22
+Completed:
+- Custom `accounts.User` (role, phone, is_verified, unique email) via `AUTH_USER_MODEL`; `BloodGroup` table seeded with 8 groups by data migration
+- Models: Donor, Hospital, BloodBank, BloodInventory, Donation, BloodRequest, Notification, with `clean()` validation and PROTECT/CASCADE policy
+- Migrations created and applied to MySQL `blood_db`
+- Django admin registered for every model
+- DRF serializers + read-only, admin-only viewsets + routes: `/api/users/ /blood-groups/ /donors/ /hospitals/ /bloodbanks/ /inventory/ /donations/ /requests/ /notifications/`
+- `docs/database-design.md` updated to the as-built design
+
+Files changed:
+- backend/apps/*/ (models, admin, serializers, views, urls, tests, migrations), backend/apps/testing.py, backend/config/settings.py, backend/config/urls.py
+- docs/database-design.md, docs/development-progress.md, Agent.md
+
+Tests:
+- `manage.py check` clean; `makemigrations --check` shows no drift
+- `manage.py test`: 43 tests, all pass (model validation, relationships, unique constraints, PROTECT/CASCADE, seed data, API 401/403/200/405, password never exposed)
+
+Git commit: see git log (`feat: add core models, migrations and base API`)
+Git push: see below
+
+Issues / decisions:
+- Swapping to a custom User model required a fresh DB. `blood_db` held only default Django tables and zero users, so it was dropped and recreated before migrating.
+- Deviations from the Phase 0 draft (recorded in database-design.md): verification lives only on User; donor/hospital/bank use `city` + `address`; donation `quantity` is in units; `Role` is a choices field, not a table.
+- `clean()` is not invoked by bare `.save()`; write APIs in later phases must enforce it.
+
+---

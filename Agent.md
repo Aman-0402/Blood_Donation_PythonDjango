@@ -4,7 +4,7 @@ Running log of what the AI agent has done and what remains, kept in sync with `d
 
 ---
 
-## Status: Phase 1 complete. Awaiting approval for Phase 2.
+## Status: Phase 2 complete. Awaiting approval for Phase 3.
 
 ## Completed
 
@@ -19,9 +19,14 @@ Running log of what the AI agent has done and what remains, kept in sync with `d
 - Both dev servers verified running together (Vite on 5173 calling Django on 8000, MySQL-backed) — confirmed working end to end.
 - Committed: `217acda`. Pushed.
 
+### Phase 2 — Database & Backend Foundation
+- Custom `accounts.User` (role/phone/is_verified), seeded `BloodGroup`, models for Donor, Hospital, BloodBank, BloodInventory, Donation, BloodRequest, Notification with `clean()` validation.
+- Migrations applied to MySQL; admin registered; serializers + read-only admin-only API routes.
+- 43 tests passing. `blood_db` was recreated (held only default tables) to switch to the custom User model.
+- Commit hash recorded in `docs/development-progress.md`.
+
 ## In Progress / Next Up
 
-- Phase 2 — Database & Backend Foundation: real models (User role field, Donor, Hospital, BloodBank, BloodGroup, Donation, BloodRequest, BloodInventory, Notification), migrations, serializers, admin config.
 - Phase 3 — Authentication & Authorization (JWT login/register/refresh, role permissions).
 - Phases 4–17 per `Doc.md` — not started.
 

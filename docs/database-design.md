@@ -2,27 +2,28 @@
 
 DB: MySQL (`blood_db`). ORM: Django models.
 
+> Status: implemented in Phase 2. Deviations from the original Phase 0 draft are marked **(as built)**.
+
 ## Entities
 
-### User (Django built-in `auth_user`, extended via `Profile` or custom fields)
+### User (`accounts.User`, custom model extending `AbstractUser`) **(as built)**
 - id (PK)
-- username, email, password (hashed)
-- role: enum [admin, donor, seeker, hospital, bloodbank]
+- username, email (unique), password (hashed)
+- role: enum [admin, donor, seeker, hospital, bloodbank] (a `Role` choices field; no separate Role table)
 - phone
-- is_verified: bool
+- is_verified: bool — single source of truth for account verification (Hospital/BloodBank do not duplicate it)
 - created_at, updated_at
 
-### BloodGroup
+### BloodGroup (`accounts.BloodGroup`) **(as built)**
 - id (PK)
-- name: enum [A+, A-, B+, B-, AB+, AB-, O+, O-]
-- (kept as separate table, not hardcoded choices, so future groups/config are additive)
+- name: unique, e.g. A+, A-, B+, B-, AB+, AB-, O+, O-
+- Separate table seeded by data migration `accounts.0002_seed_blood_groups`, so future groups are additive.
 
 ### Donor
 - id (PK)
 - user_id (FK → User, 1:1)
 - blood_group_id (FK → BloodGroup)
-- location / address
-- latitude, longitude (optional, future search)
+- address, city (indexed; used for search in Phase 9) **(as built)**
 - date_of_birth
 - last_donation_date
 - is_available: bool
@@ -33,18 +34,16 @@ DB: MySQL (`blood_db`). ORM: Django models.
 - id (PK)
 - user_id (FK → User, 1:1)
 - name
-- address, location
-- license_number
-- is_verified: bool
+- address, city (indexed)
+- license_number (unique)
 - created_at, updated_at
 
 ### BloodBank
 - id (PK)
 - user_id (FK → User, 1:1)
 - name
-- address, location
-- license_number
-- is_verified: bool
+- address, city (indexed)
+- license_number (unique)
 - created_at, updated_at
 
 ### BloodInventory
@@ -62,7 +61,7 @@ DB: MySQL (`blood_db`). ORM: Django models.
 - donor_id (FK → Donor)
 - bloodbank_id (FK → BloodBank)
 - blood_group_id (FK → BloodGroup)
-- quantity (ml or units)
+- quantity: units of blood (not ml), consistent with inventory units **(as built)**
 - donation_date
 - collection_location
 - status: enum [scheduled, completed, cancelled, rejected]
@@ -111,7 +110,10 @@ Current Inventory (per blood group, per bank)
 
 Enforced via a transaction-safe service function on donation-complete / request-fulfill / expiry-sweep — not computed ad hoc per view.
 
-## Notes
+## Notes **(as built)**
 
-- All FKs use `on_delete` policy decided per-model in Phase 2 (default: `PROTECT` for records with financial/audit relevance, `CASCADE` for pure profile extensions).
-- Indexes planned on: `blood_group_id`, `status` columns, `expiry_date`, `user.role`.
+- `on_delete`: `CASCADE` for profile extensions (Donor/Hospital/BloodBank → User) and Notification → User; `PROTECT` for everything else (BloodGroup, donations, requests, inventory, requester), so audit history cannot be silently deleted.
+- Model-level `clean()` enforces: profile owner has the matching role; donor dates not in the future; inventory expiry after collection and units >= 1; donation blood group matches donor; request requester is seeker/hospital, seekers need a patient name, hospital requests need a hospital.
+- `clean()` runs on `full_clean()`/admin forms, not on bare `.save()`. API write serializers (Phase 4+) must call the same rules.
+- Indexes: `status` columns, `expiry_date`, donor/hospital/bank `city`. (`user.role` index deferred until Phase 9 search proves it needed.)
+- Phase 2 API endpoints are read-only and admin-only placeholders; per-role permissions arrive in Phase 3+.

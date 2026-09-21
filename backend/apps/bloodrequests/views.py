@@ -1,3 +1,11 @@
-from django.shortcuts import render
+from rest_framework import viewsets
+from rest_framework.permissions import IsAdminUser
 
-# Create your views here.
+from .models import BloodRequest
+from .serializers import BloodRequestSerializer
+
+
+class BloodRequestViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = BloodRequest.objects.select_related('requester', 'hospital', 'blood_group').order_by('id')
+    serializer_class = BloodRequestSerializer
+    permission_classes = [IsAdminUser]
