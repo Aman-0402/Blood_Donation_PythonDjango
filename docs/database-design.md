@@ -117,3 +117,4 @@ Enforced via a transaction-safe service function on donation-complete / request-
 - `clean()` runs on `full_clean()`/admin forms, not on bare `.save()`. API write serializers (Phase 4+) must call the same rules.
 - Indexes: `status` columns, `expiry_date`, donor/hospital/bank `city`. (`user.role` index deferred until Phase 9 search proves it needed.)
 - Phase 2 API endpoints are read-only and admin-only placeholders; per-role permissions arrive in Phase 3+.
+- Phase 5 additions: `BloodRequest.contact_phone`, `BloodRequest.notes`, `units_required` capped at 100, default ordering newest first; new table `RequestStatusHistory` (`request`, `from_status`, `to_status`, `changed_by` SET_NULL, `note`, `created_at`) written on creation and every status change.

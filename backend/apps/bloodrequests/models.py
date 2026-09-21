@@ -3,6 +3,8 @@ from django.db import models
 
 from apps.accounts.models import Role
 
+MAX_UNITS_PER_REQUEST = 100
+
 
 class BloodRequest(models.Model):
     class Urgency(models.TextChoices):
@@ -30,6 +32,8 @@ class BloodRequest(models.Model):
         related_name='blood_requests',
     )
     patient_name = models.CharField(max_length=200, blank=True)
+    contact_phone = models.CharField(max_length=20, blank=True)
+    notes = models.TextField(blank=True)
     blood_group = models.ForeignKey(
         'accounts.BloodGroup', on_delete=models.PROTECT, related_name='blood_requests'
     )
@@ -49,10 +53,13 @@ class BloodRequest(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        ordering = ['-created_at', '-id']
+
     def clean(self):
         errors = {}
-        if self.units_required is not None and self.units_required < 1:
-            errors['units_required'] = 'Units required must be at least 1.'
+        if self.units_required is not None and not 1 <= self.units_required <= MAX_UNITS_PER_REQUEST:
+            errors['units_required'] = f'Units required must be between 1 and {MAX_UNITS_PER_REQUEST}.'
         if self.requester_id:
             role = self.requester.role
             if role not in (Role.SEEKER, Role.HOSPITAL):
@@ -66,3 +73,23 @@ class BloodRequest(models.Model):
 
     def __str__(self):
         return f'Request #{self.pk} {self.blood_group} x{self.units_required} ({self.status})'
+
+
+class RequestStatusHistory(models.Model):
+    request = models.ForeignKey(
+        BloodRequest, on_delete=models.CASCADE, related_name='history'
+    )
+    from_status = models.CharField(max_length=20, blank=True)
+    to_status = models.CharField(max_length=20)
+    changed_by = models.ForeignKey(
+        'accounts.User', on_delete=models.SET_NULL, null=True, blank=True, related_name='+'
+    )
+    note = models.CharField(max_length=500, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at', 'id']
+        verbose_name_plural = 'request status history'
+
+    def __str__(self):
+        return f'Request #{self.request_id}: {self.from_status or "-"} -> {self.to_status}'

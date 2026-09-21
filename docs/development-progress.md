@@ -150,13 +150,47 @@ Tests:
 - Live smoke test against running Django + MySQL: full donor workflow passed (register, 404 before profile, validation rejects, create, duplicate rejected, availability toggle, dashboard, history, seeker gets 403); test users removed afterwards
 - Frontend: lint clean, build succeeds. Not exercised in a real browser (no browser automation available here), so UI behavior is verified by build and API-level tests only.
 
-Git commit: see next entry
-Git push: see next entry
+Git commit: b2931c31ce37ebc8bc1b848a9322e5e487bf29bd
+Git push: Successful
 
 Issues / decisions (assumptions to confirm):
 - Eligibility defaults (age 18 to 65, 90-day interval) are my assumptions, not from Doc.md; they are env-configurable.
 - Test bug found and fixed: tests used the machine's local date while the app uses the configured timezone (UTC), causing an off-by-one age.
 - "Active requests" on the donor dashboard is deferred: it needs request-to-donor matching (Phase 9) and request data (Phase 5).
 - Doc.md's donor "accept/decline requests" also depends on matching and is deferred to Phase 9.
+
+---
+
+## Phase 5 — Blood Request Module
+
+Status: Completed
+Date: 2026-09-22
+Completed:
+- Backend: create / list / retrieve / edit / cancel requests, admin status workflow with a strict transition map, per-request audit history; requests cannot be deleted
+- Access rules: seekers and hospitals see only their own requests, admins see all, other roles get 403, strangers get 404; hospital requests need a hospital profile and a verified account
+- Server-controlled fields (`requester`, `hospital`, `status`, `fulfilled_by_bloodbank`) cannot be set by clients; edits only while `pending`
+- Status changes run in a row-locked transaction so concurrent changes cannot both succeed (`bloodrequests/workflow.py`)
+- Model additions: `contact_phone`, `notes`, `RequestStatusHistory` (migration `bloodrequests.0002`); Django admin shows history inline
+- Frontend (Axios): request list with status filter and pagination, create/edit form, detail page with history timeline, owner cancel, admin status buttons with note; shared by seeker, hospital and admin routes
+- API and database docs updated
+
+Files changed:
+- backend/apps/bloodrequests/{models,serializers,views,workflow,admin,test_api}.py + migration, backend/apps/accounts/test_api.py
+- frontend/src/pages/requests/*, services/requests.js, layouts/navConfig.js, routes/AppRoutes.jsx
+- docs/api-documentation.md, docs/database-design.md, docs/development-progress.md, Agent.md
+
+Tests:
+- Backend: 137 tests pass (35 new request tests: create/validation matrix, server-controlled fields, hospital verified/unverified/no-profile, list scoping and filters, ordering, 404 for strangers, edit rules, cancel rules per state, full admin happy path with history, invalid jumps, terminal states, role gating, workflow unit tests incl. repeated-transition rejection)
+- Live smoke test against running Django + MySQL: 14 checks passed (create, validation, unverified hospital 403, stranger 404, edit, admin approve, invalid jump 400, edit-after-approval 400, owner cancel, final state, history trail); test data removed afterwards
+- The live test caught a real ordering bug (unverified hospital without a profile got 400 instead of 403); fixed by checking verification before validation, with a regression test
+- Frontend: lint clean, build succeeds. Not exercised in a real browser.
+
+Git commit: see next entry
+Git push: see next entry
+
+Issues / decisions:
+- Cap of 100 units per request is my assumption (guard against nonsense values); easy to change in `bloodrequests/models.py`.
+- Only admins move requests forward for now. Blood banks get processing/completion in Phase 7; automatic matching in Phase 9.
+- Notifications on request events are not sent yet (Phase 10).
 
 ---

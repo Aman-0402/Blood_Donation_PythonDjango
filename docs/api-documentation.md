@@ -51,6 +51,32 @@ Validation (server-side): dates not in the future, last donation not before birt
 
 Eligibility rules (configurable via env, defaults in `config/settings.py`): age between `DONOR_MIN_AGE` (18) and `DONOR_MAX_AGE` (65), and at least `DONATION_INTERVAL_DAYS` (90) since the most recent of the self-reported `last_donation_date` and the latest completed donation. `is_available` is the donor's own willingness flag and is separate from eligibility.
 
+## Blood requests (Phase 5)
+
+Request fields: `id`, `requester`, `requester_username`, `hospital`, `hospital_name`, `patient_name`, `contact_phone`, `notes`, `blood_group`, `blood_group_name`, `units_required` (1 to 100), `urgency` (`normal`/`urgent`/`critical`), `location`, `status`, `fulfilled_by_bloodbank`, `fulfilled_by_bloodbank_name`, `created_at`, `updated_at`, plus computed `allowed_next_statuses`. `requester`, `hospital`, `status` and `fulfilled_by_bloodbank` are server-controlled and ignored if sent by the client.
+
+Statuses and allowed transitions (enforced in `bloodrequests/workflow.py`, row-locked, every change written to the audit history):
+
+```text
+pending    -> approved | rejected | cancelled
+approved   -> matched  | rejected | cancelled
+matched    -> processing | cancelled
+processing -> completed
+completed, cancelled, rejected: final
+```
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | `/requests/` | seeker, hospital | Create (status `pending`). Seekers must give `patient_name`. Hospitals must have a hospital profile and be verified (`403` if unverified, checked before validation; `400` if no profile); `hospital` is set from the profile. |
+| GET | `/requests/` | seeker, hospital, admin | Own requests (admin: all), newest first, paginated. Filters: `?status=`, `?urgency=`, `?blood_group=<id>`. |
+| GET | `/requests/{id}/` | owner, admin | Detail. Other users get `404`. |
+| PATCH / PUT | `/requests/{id}/` | owner | Edit while `pending` only (`400` otherwise). Admins cannot edit. |
+| POST | `/requests/{id}/cancel/` | owner, admin | Owner: from `pending`/`approved`/`matched`. Admin: any state the workflow allows. |
+| POST | `/requests/{id}/status/` | admin | Body: `status`, optional `note`. `400` with the allowed list on an invalid jump. |
+| GET | `/requests/{id}/history/` | owner, admin | Audit trail: `from_status`, `to_status`, `changed_by_username`, `note`, `created_at`. |
+
+Requests cannot be deleted (audit trail). Blood banks will get their processing/complete transitions in Phase 7; notifications on status changes arrive in Phase 10.
+
 ## Reference data and admin lookups (Phase 2, permissions updated in Phase 3)
 
 | Method | Path | Auth | Description |
@@ -58,4 +84,4 @@ Eligibility rules (configurable via env, defaults in `config/settings.py`): age 
 | GET | `/blood-groups/` | any user | The 8 blood groups. |
 | GET | `/users/` | admin | User list (no passwords). |
 
-Read-only admin-only placeholder lists (superseded module by module in later phases): `/donations/`, `/inventory/`, `/notifications/`, `/bloodbanks/`, `/hospitals/`, `/requests/`.
+Read-only admin-only placeholder lists (superseded module by module in later phases): `/donations/`, `/inventory/`, `/notifications/`, `/bloodbanks/`, `/hospitals/`.

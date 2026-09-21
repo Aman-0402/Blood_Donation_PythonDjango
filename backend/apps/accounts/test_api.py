@@ -11,7 +11,6 @@ ADMIN_ONLY_ENDPOINTS = [
     '/api/bloodbanks/',
     '/api/inventory/',
     '/api/donations/',
-    '/api/requests/',
     '/api/notifications/',
 ]
 

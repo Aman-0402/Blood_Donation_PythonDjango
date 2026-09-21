@@ -4,7 +4,7 @@ Quick top-level view of what the AI agent has done and what remains. `docs/devel
 
 ## Current status
 
-Phase 4 complete. User approved Phases 3 to 6 in one go, each committed and pushed separately. Phase 5 is next.
+Phase 5 complete. User approved Phases 3 to 6 in one go, each committed and pushed separately. Phase 6 is next.
 
 ## Completed
 
@@ -15,9 +15,10 @@ Phase 4 complete. User approved Phases 3 to 6 in one go, each committed and push
 
 - **Phase 4 — Donor module.** Donor profile/availability/eligibility/history/dashboard APIs + frontend pages, `ModelCleanMixin` for server-side validation, pagination, configurable eligibility rules (assumed 18-65, 90 days). 102 backend tests, live smoke test passed, frontend lint/build clean.
 
+- **Phase 5 — Blood requests.** Create/edit/cancel, strict admin status workflow with audit history, owner-scoped access, hospital verification gate, frontend list/form/detail. 137 backend tests, live smoke test passed (it caught and fixed a 400-vs-403 ordering bug).
+
 ## In progress / next
 
-- Phase 5: blood request module (create/update/cancel, status workflow, history)
 - Phase 6: hospital module (profile, verification, dashboard, availability search)
 - Phases 7 to 17: not approved yet, ask before starting
 
