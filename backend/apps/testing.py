@@ -1,5 +1,7 @@
 import itertools
-from datetime import date, timedelta
+from datetime import timedelta
+
+from django.utils import timezone
 
 from apps.accounts.models import BloodGroup, Role, User
 from apps.bloodbanks.models import BloodBank
@@ -7,6 +9,10 @@ from apps.donors.models import Donor
 from apps.hospitals.models import Hospital
 
 _counter = itertools.count(1)
+
+
+def today():
+    return timezone.localdate()
 
 
 def make_user(role=Role.SEEKER, **kwargs):
@@ -23,7 +29,7 @@ def blood_group(name='O+'):
 def make_donor(group='O+', **kwargs):
     kwargs.setdefault('user', make_user(Role.DONOR))
     kwargs.setdefault('city', 'Pune')
-    kwargs.setdefault('date_of_birth', date.today() - timedelta(days=365 * 30))
+    kwargs.setdefault('date_of_birth', today() - timedelta(days=365 * 30))
     return Donor.objects.create(blood_group=blood_group(group), **kwargs)
 
 

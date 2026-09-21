@@ -118,12 +118,45 @@ Tests:
 - Live smoke test against running Django + MySQL: register, login, me, 401 without token, 403 for donor on admin endpoint, 401 bad login, logout 205, refresh after logout 401; CORS allows only `http://localhost:5173`
 - Frontend: `npm run lint` clean, `npm run build` succeeds. Not exercised in a real browser (no browser automation available in this environment).
 
-Git commit: see next entry
-Git push: see next entry
+Git commit: 5dbe5e7067face79cbd3f5c082ff3159ec6ae93f
+Git push: Successful
 
 Issues / decisions:
 - No login throttling yet; scheduled for Phase 15 security review.
 - JWTs are kept in `localStorage` (standard SPA approach, exposed to XSS). To be reviewed in Phase 15.
 - Unverified accounts can log in; verification gates specific actions in later phases (hospital/bank actions), not login.
+
+---
+
+## Phase 4 — Donor Module
+
+Status: Completed
+Date: 2026-09-22
+Completed:
+- Backend: donor profile create/read/update (`/donors/`, `/donors/me/`), donation history, donor dashboard, admin list/retrieve; donors cannot see each other; email/phone never exposed
+- Server-side validation via new `ModelCleanMixin` (`apps/validation.py`) so API writes reuse model `clean()` rules; blood group locked once donations exist; owner cannot be spoofed
+- Eligibility engine (`donors/eligibility.py`): age range and minimum interval since last donation, configurable through env settings
+- Global pagination (page size 20); `TIME_ZONE` now configurable (`DJANGO_TIME_ZONE`)
+- Frontend (Axios services): donor dashboard, profile create/edit form with availability toggle and eligibility banner, paginated donation history; shared StatCard/StatusBadge components
+- API docs updated
+
+Files changed:
+- backend/apps/donors/{views,serializers,eligibility,test_api}.py, backend/apps/validation.py, backend/apps/donations/serializers.py, backend/apps/accounts/{views,test_api}.py, backend/apps/testing.py, backend/config/settings.py, backend/.env.example
+- frontend/src/pages/donor/*, services/{donors,reference}.js, hooks/useBloodGroups.js, components/{StatCard,StatusBadge}.jsx, layouts/navConfig.js, routes/AppRoutes.jsx
+- docs/api-documentation.md, docs/development-progress.md, Agent.md
+
+Tests:
+- Backend: 102 tests pass (30 new donor API tests: role gating, create/duplicate/spoof, validation matrix, PUT/PATCH, blood-group lock, eligibility incl. age boundaries/interval/configurability/completed-vs-scheduled donations, history isolation, dashboard counts, admin vs donor access, privacy)
+- Live smoke test against running Django + MySQL: full donor workflow passed (register, 404 before profile, validation rejects, create, duplicate rejected, availability toggle, dashboard, history, seeker gets 403); test users removed afterwards
+- Frontend: lint clean, build succeeds. Not exercised in a real browser (no browser automation available here), so UI behavior is verified by build and API-level tests only.
+
+Git commit: see next entry
+Git push: see next entry
+
+Issues / decisions (assumptions to confirm):
+- Eligibility defaults (age 18 to 65, 90-day interval) are my assumptions, not from Doc.md; they are env-configurable.
+- Test bug found and fixed: tests used the machine's local date while the app uses the configured timezone (UTC), causing an off-by-one age.
+- "Active requests" on the donor dashboard is deferred: it needs request-to-donor matching (Phase 9) and request data (Phase 5).
+- Doc.md's donor "accept/decline requests" also depends on matching and is deferred to Phase 9.
 
 ---

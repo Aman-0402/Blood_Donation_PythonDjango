@@ -4,6 +4,9 @@ import Home from '../pages/Home'
 import Login from '../pages/Login'
 import Register from '../pages/Register'
 import RoleHome from '../pages/RoleHome'
+import DonorDashboard from '../pages/donor/DonorDashboard'
+import DonorDonations from '../pages/donor/DonorDonations'
+import DonorProfile from '../pages/donor/DonorProfile'
 import { ROLES } from '../utils/roles'
 import ProtectedRoute from './ProtectedRoute'
 
@@ -17,6 +20,14 @@ function roleRoutes(role, children = null) {
   )
 }
 
+const donorChildren = (
+  <>
+    <Route index element={<DonorDashboard />} />
+    <Route path="profile" element={<DonorProfile />} />
+    <Route path="donations" element={<DonorDonations />} />
+  </>
+)
+
 function AppRoutes() {
   return (
     <Routes>
@@ -24,7 +35,7 @@ function AppRoutes() {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       {roleRoutes(ROLES.ADMIN)}
-      {roleRoutes(ROLES.DONOR)}
+      {roleRoutes(ROLES.DONOR, donorChildren)}
       {roleRoutes(ROLES.SEEKER)}
       {roleRoutes(ROLES.HOSPITAL)}
       {roleRoutes(ROLES.BLOODBANK)}

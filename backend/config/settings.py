@@ -109,7 +109,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 
 LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'UTC'
+TIME_ZONE = os.getenv('DJANGO_TIME_ZONE', 'UTC')
 USE_I18N = True
 USE_TZ = True
 
@@ -130,6 +130,8 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
     ),
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 20,
 }
 
 SIMPLE_JWT = {
@@ -138,6 +140,13 @@ SIMPLE_JWT = {
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
 }
+
+
+# Donor eligibility rules (business assumptions, configurable per deployment)
+
+DONOR_MIN_AGE = int(os.getenv('DONOR_MIN_AGE', '18'))
+DONOR_MAX_AGE = int(os.getenv('DONOR_MAX_AGE', '65'))
+DONATION_INTERVAL_DAYS = int(os.getenv('DONATION_INTERVAL_DAYS', '90'))
 
 
 # CORS

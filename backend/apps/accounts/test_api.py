@@ -51,16 +51,17 @@ class ApiAccessTests(TestCase):
         self.client.force_authenticate(make_user(Role.SEEKER))
         response = self.client.get('/api/blood-groups/')
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.json()['results'] if 'results' in response.json() else response.json()), 8)
+        self.assertEqual(len(response.json()), 8)
 
     def test_write_methods_not_allowed(self):
         self.client.force_authenticate(make_user(Role.ADMIN))
-        for url in ADMIN_ONLY_ENDPOINTS:
+        read_only = [u for u in ADMIN_ONLY_ENDPOINTS if u != '/api/donors/']
+        for url in read_only:
             with self.subTest(url=url):
                 self.assertEqual(self.client.post(url, {}).status_code, 405)
+        self.assertEqual(self.client.post('/api/donors/', {}).status_code, 403)
 
     def test_user_payload_excludes_password(self):
         self.client.force_authenticate(make_user(Role.ADMIN))
-        payload = self.client.get('/api/users/').json()
-        rows = payload['results'] if isinstance(payload, dict) else payload
+        rows = self.client.get('/api/users/').json()['results']
         self.assertNotIn('password', rows[0])

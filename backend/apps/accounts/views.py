@@ -29,6 +29,7 @@ class BloodGroupViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = BloodGroup.objects.all()
     serializer_class = BloodGroupSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class = None
 
 
 class RegisterView(generics.CreateAPIView):
