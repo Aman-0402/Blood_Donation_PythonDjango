@@ -4,9 +4,8 @@ from rest_framework.test import APIClient
 from apps.accounts.models import Role
 from apps.testing import make_user
 
-ENDPOINTS = [
+ADMIN_ONLY_ENDPOINTS = [
     '/api/users/',
-    '/api/blood-groups/',
     '/api/donors/',
     '/api/hospitals/',
     '/api/bloodbanks/',
@@ -27,33 +26,41 @@ class ApiAccessTests(TestCase):
         self.assertEqual(response.json(), {'status': 'ok'})
 
     def test_anonymous_rejected(self):
-        for url in ENDPOINTS:
+        for url in ADMIN_ONLY_ENDPOINTS + ['/api/blood-groups/']:
             with self.subTest(url=url):
                 self.assertEqual(self.client.get(url).status_code, 401)
 
     def test_non_admin_forbidden(self):
-        self.client.force_authenticate(make_user(Role.DONOR))
-        for url in ENDPOINTS:
-            with self.subTest(url=url):
-                self.assertEqual(self.client.get(url).status_code, 403)
+        for role in (Role.DONOR, Role.SEEKER, Role.HOSPITAL, Role.BLOODBANK):
+            self.client.force_authenticate(make_user(role))
+            for url in ADMIN_ONLY_ENDPOINTS:
+                with self.subTest(role=role, url=url):
+                    self.assertEqual(self.client.get(url).status_code, 403)
 
-    def test_admin_can_read(self):
-        admin = make_user(Role.ADMIN, is_staff=True)
-        self.client.force_authenticate(admin)
-        for url in ENDPOINTS:
+    def test_staff_flag_alone_is_not_admin(self):
+        self.client.force_authenticate(make_user(Role.DONOR, is_staff=True))
+        self.assertEqual(self.client.get('/api/users/').status_code, 403)
+
+    def test_admin_role_can_read(self):
+        self.client.force_authenticate(make_user(Role.ADMIN))
+        for url in ADMIN_ONLY_ENDPOINTS:
             with self.subTest(url=url):
                 self.assertEqual(self.client.get(url).status_code, 200)
 
+    def test_any_authenticated_user_can_list_blood_groups(self):
+        self.client.force_authenticate(make_user(Role.SEEKER))
+        response = self.client.get('/api/blood-groups/')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.json()['results'] if 'results' in response.json() else response.json()), 8)
+
     def test_write_methods_not_allowed(self):
-        admin = make_user(Role.ADMIN, is_staff=True)
-        self.client.force_authenticate(admin)
-        for url in ENDPOINTS:
+        self.client.force_authenticate(make_user(Role.ADMIN))
+        for url in ADMIN_ONLY_ENDPOINTS:
             with self.subTest(url=url):
                 self.assertEqual(self.client.post(url, {}).status_code, 405)
 
     def test_user_payload_excludes_password(self):
-        admin = make_user(Role.ADMIN, is_staff=True)
-        self.client.force_authenticate(admin)
-        results = self.client.get('/api/users/').json()
-        rows = results['results'] if isinstance(results, dict) else results
+        self.client.force_authenticate(make_user(Role.ADMIN))
+        payload = self.client.get('/api/users/').json()
+        rows = payload['results'] if isinstance(payload, dict) else payload
         self.assertNotIn('password', rows[0])

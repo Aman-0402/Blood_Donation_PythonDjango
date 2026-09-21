@@ -1,38 +1,30 @@
 # Agent.md — AI Development Progress Log
 
-Running log of what the AI agent has done and what remains, kept in sync with `docs/development-progress.md` (which is the authoritative per-phase record per Doc.md). This file is a quicker top-level glance; `docs/development-progress.md` has full detail per phase (files, tests, commit hashes).
+Quick top-level view of what the AI agent has done and what remains. `docs/development-progress.md` is the authoritative per-phase record (files, tests, commit hashes, issues).
 
----
+## Current status
 
-## Status: Phase 2 complete. Awaiting approval for Phase 3.
+Phase 3 complete. User approved Phases 3 to 6 in one go, each committed and pushed separately. Phase 4 is next.
 
 ## Completed
 
-### Phase 0 — Requirement Analysis & Planning
-- Wrote `docs/project-requirements.md`, `docs/database-design.md`, `docs/development-progress.md`
-- Replaced stale `README.md`
-- Committed: `9bb4d42`, `1033dbb`. Pushed.
+- **Phase 0 — Requirements & planning.** docs/project-requirements.md, database-design.md, development-progress.md; README replaced.
+- **Phase 1 — Project setup.** Django 5.2 + DRF + SimpleJWT + CORS, MySQL via PyMySQL; Vite + React + Tailwind v4 + Router + Axios; `.env`/`.env.example`.
+- **Phase 2 — Database foundation.** Custom User (role), seeded BloodGroup, Donor/Hospital/BloodBank/BloodInventory/Donation/BloodRequest/Notification models with validation, migrations, admin, serializers, admin-only read APIs. `blood_db` recreated once (held only default tables) to adopt the custom User model.
+- **Phase 3 — Auth.** Register/login/refresh/logout/me/change-password, token blacklist, role permission classes, frontend auth context + protected routes + auto-refresh. 72 backend tests, live smoke test passed, frontend lint/build clean (not browser-tested).
 
-### Phase 1 — Project Setup
-- Backend: `backend/` — Django 5.2 project (`config`), venv, apps scaffolded (accounts, donors, hospitals, bloodbanks, donations, bloodrequests, inventory, notifications — empty, no models yet, that's Phase 2), DRF + SimpleJWT + django-cors-headers installed, MySQL connection via PyMySQL (avoids mysqlclient's Windows build toolchain requirement), `.env`/`.env.example`, `/api/health/` verified live against MySQL `blood_db`.
-- Frontend: `frontend/` — Vite + React (JS) scaffold, Tailwind CSS v4 (via `@tailwindcss/vite` plugin — v4 replaced the old `postcss`+`init` flow), react-router-dom, axios, base folder structure (`components/ pages/ layouts/ services/ hooks/ context/ routes/ utils/`), `services/api.js` axios client pointed at backend, `pages/Home.jsx` live-checks `/api/health/`.
-- Both dev servers verified running together (Vite on 5173 calling Django on 8000, MySQL-backed) — confirmed working end to end.
-- Committed: `217acda`. Pushed.
+## In progress / next
 
-### Phase 2 — Database & Backend Foundation
-- Custom `accounts.User` (role/phone/is_verified), seeded `BloodGroup`, models for Donor, Hospital, BloodBank, BloodInventory, Donation, BloodRequest, Notification with `clean()` validation.
-- Migrations applied to MySQL; admin registered; serializers + read-only admin-only API routes.
-- 43 tests passing. `blood_db` was recreated (held only default tables) to switch to the custom User model.
-- Commit hash recorded in `docs/development-progress.md`.
+- Phase 4: donor module (profile, availability, eligibility, history, dashboard)
+- Phase 5: blood request module (create/update/cancel, status workflow, history)
+- Phase 6: hospital module (profile, verification, dashboard, availability search)
+- Phases 7 to 17: not approved yet, ask before starting
 
-## In Progress / Next Up
+## Decisions and assumptions
 
-- Phase 3 — Authentication & Authorization (JWT login/register/refresh, role permissions).
-- Phases 4–17 per `Doc.md` — not started.
-
-## Notes / Decisions Made Along the Way
-
-- MySQL: `blood_db`, user `root`, blank password — accepted for local dev, lives in `backend/.env` only (gitignored), `.env.example` has placeholders.
-- CSS framework: Tailwind CSS chosen over Bootstrap (user decision).
-- README.md was rewritten immediately in Phase 0 instead of waiting for Phase 16, per user decision.
-- Backend uses PyMySQL instead of `mysqlclient` (pure-Python driver, no Windows build tools needed) — functionally equivalent DB driver choice, not an architecture change.
+- MySQL `blood_db`, user `root`, blank password: local dev only, in gitignored `backend/.env`.
+- Tailwind CSS chosen over Bootstrap (user decision).
+- PyMySQL instead of mysqlclient (no Windows build tools needed).
+- Doc.md RULE 7 (no Co-authored-by trailer) is followed for every commit; it overrides any default attribution.
+- Verification lives on `User.is_verified` only.
+- Login throttling and JWT-in-localStorage risk deferred to Phase 15 security review.
