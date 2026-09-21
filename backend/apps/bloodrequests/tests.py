@@ -13,6 +13,7 @@ def make_request(requester=None, **kwargs):
     kwargs.setdefault('blood_group', blood_group('AB-'))
     kwargs.setdefault('units_required', 2)
     kwargs.setdefault('location', 'Pune')
+    kwargs.setdefault('city', 'Pune')
     if requester.role == Role.SEEKER:
         kwargs.setdefault('patient_name', 'Patient One')
     return BloodRequest.objects.create(requester=requester, **kwargs)
@@ -25,6 +26,14 @@ class BloodRequestTests(TestCase):
         self.assertEqual(request.status, BloodRequest.Status.PENDING)
         self.assertEqual(request.urgency, BloodRequest.Urgency.NORMAL)
         self.assertIsNone(request.fulfilled_by_bloodbank)
+
+    def test_seeker_request_needs_a_city(self):
+        for city in ('', '   '):
+            with self.subTest(city=repr(city)):
+                request = make_request(city=city)
+                with self.assertRaises(ValidationError) as ctx:
+                    request.full_clean()
+                self.assertIn('city', ctx.exception.message_dict)
 
     def test_hospital_request_valid_with_hospital(self):
         hospital = make_hospital()

@@ -39,6 +39,7 @@ class BloodRequest(models.Model):
     )
     units_required = models.PositiveIntegerField()
     urgency = models.CharField(max_length=20, choices=Urgency.choices, default=Urgency.NORMAL)
+    city = models.CharField(max_length=100, blank=True, db_index=True)
     location = models.CharField(max_length=255)
     status = models.CharField(
         max_length=20, choices=Status.choices, default=Status.PENDING, db_index=True
@@ -64,8 +65,11 @@ class BloodRequest(models.Model):
             role = self.requester.role
             if role not in (Role.SEEKER, Role.HOSPITAL):
                 errors['requester'] = 'Requester must be a blood seeker or hospital.'
-            elif role == Role.SEEKER and not self.patient_name:
-                errors['patient_name'] = 'Patient name is required for seeker requests.'
+            elif role == Role.SEEKER:
+                if not self.patient_name:
+                    errors['patient_name'] = 'Patient name is required for seeker requests.'
+                if not (self.city or '').strip():
+                    errors['city'] = 'City is required so nearby donors and blood banks can be matched.'
             elif role == Role.HOSPITAL and not self.hospital_id:
                 errors['hospital'] = 'Hospital is required for hospital requests.'
         if errors:
@@ -93,3 +97,26 @@ class RequestStatusHistory(models.Model):
 
     def __str__(self):
         return f'Request #{self.request_id}: {self.from_status or "-"} -> {self.to_status}'
+
+
+class DonorResponse(models.Model):
+    """A donor's answer to a compatible open request. Accepting is consent to share name and phone with the requester."""
+
+    class Answer(models.TextChoices):
+        ACCEPTED = 'accepted', 'Accepted'
+        DECLINED = 'declined', 'Declined'
+
+    request = models.ForeignKey(BloodRequest, on_delete=models.CASCADE, related_name='donor_responses')
+    donor = models.ForeignKey('donors.Donor', on_delete=models.CASCADE, related_name='request_responses')
+    answer = models.CharField(max_length=20, choices=Answer.choices)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['request', 'donor'], name='one_response_per_donor_per_request'),
+        ]
+        ordering = ['-updated_at', '-id']
+
+    def __str__(self):
+        return f'{self.donor} {self.answer} request #{self.request_id}'

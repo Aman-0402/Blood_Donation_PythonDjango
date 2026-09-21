@@ -4,10 +4,12 @@ export const NAV_ITEMS = {
     { to: '/admin/requests', label: 'Blood requests' },
     { to: '/admin/hospitals', label: 'Hospitals' },
     { to: '/admin/bloodbanks', label: 'Blood banks' },
+    { to: '/admin/search', label: 'Search' },
   ],
   donor: [
     { to: '/donor', label: 'Dashboard', end: true },
     { to: '/donor/profile', label: 'My profile' },
+    { to: '/donor/requests', label: 'Requests near you' },
     { to: '/donor/donations', label: 'Donation history' },
     { to: '/donor/schedule', label: 'Schedule donation' },
   ],
@@ -15,11 +17,12 @@ export const NAV_ITEMS = {
     { to: '/seeker', label: 'Dashboard', end: true },
     { to: '/seeker/requests', label: 'My requests', end: true },
     { to: '/seeker/requests/new', label: 'New request' },
+    { to: '/seeker/search', label: 'Search' },
   ],
   hospital: [
     { to: '/hospital', label: 'Dashboard', end: true },
     { to: '/hospital/profile', label: 'Hospital profile' },
-    { to: '/hospital/availability', label: 'Blood availability' },
+    { to: '/hospital/search', label: 'Search' },
     { to: '/hospital/requests', label: 'Blood requests', end: true },
     { to: '/hospital/requests/new', label: 'New request' },
   ],
@@ -31,5 +34,6 @@ export const NAV_ITEMS = {
     { to: '/bloodbank/issue', label: 'Issue blood' },
     { to: '/bloodbank/history', label: 'Inventory history' },
     { to: '/bloodbank/requests', label: 'Requests' },
+    { to: '/bloodbank/search', label: 'Search' },
   ],
 }

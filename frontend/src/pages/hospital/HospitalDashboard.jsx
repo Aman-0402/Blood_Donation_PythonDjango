@@ -72,7 +72,7 @@ function HospitalDashboard() {
             </div>
           ))}
         </div>
-        <Link to="/hospital/availability" className="mt-2 inline-block text-sm text-red-700 underline">
+        <Link to="/hospital/search" className="mt-2 inline-block text-sm text-red-700 underline">
           Search by city
         </Link>
       </section>

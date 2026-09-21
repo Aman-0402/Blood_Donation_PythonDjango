@@ -25,11 +25,6 @@ export async function getHospitalDashboard() {
   return data
 }
 
-export async function searchBloodAvailability(params = {}) {
-  const { data } = await api.get('/hospitals/blood-availability/', { params })
-  return data
-}
-
 export async function listHospitals(params = {}) {
   const { data } = await api.get('/hospitals/', { params })
   return data

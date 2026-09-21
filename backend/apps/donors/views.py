@@ -1,9 +1,13 @@
-from rest_framework import mixins, viewsets
+from django.core.exceptions import ValidationError as DjangoValidationError
+from rest_framework import mixins, serializers, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
 
 from apps.accounts.permissions import IsAdminRole, IsDonor
+from apps.bloodrequests import matching
+from apps.bloodrequests.models import DonorResponse
+from apps.bloodrequests.serializers import DonorRequestSerializer, RespondSerializer
 from apps.donations.models import Donation
 from apps.donations.serializers import DonationSerializer
 from apps.notifications.models import Notification
@@ -11,7 +15,7 @@ from apps.notifications.models import Notification
 from .models import Donor
 from .serializers import DonorSerializer
 
-DONOR_ACTIONS = ('create', 'me', 'my_donations', 'dashboard')
+DONOR_ACTIONS = ('create', 'me', 'my_donations', 'dashboard', 'my_requests', 'respond')
 
 
 class DonorViewSet(
@@ -79,5 +83,28 @@ class DonorViewSet(
                 'unread_notifications': Notification.objects.filter(
                     user=request.user, is_read=False
                 ).count(),
+                'matching_requests': matching.open_requests_for_donor(donor).count(),
             }
         )
+
+    @action(detail=False, methods=['get'], url_path='me/requests')
+    def my_requests(self, request):
+        """Open requests in the donor's city that their blood group can serve. No patient or requester details."""
+        donor = self._own_profile()
+        queryset = matching.open_requests_for_donor(donor)
+        responses = dict(DonorResponse.objects.filter(donor=donor).values_list('request_id', 'answer'))
+        page = self.paginate_queryset(queryset)
+        serializer = DonorRequestSerializer(page, many=True, context={'responses': responses})
+        return self.get_paginated_response(serializer.data)
+
+    @action(detail=False, methods=['post'], url_path=r'me/requests/(?P<request_id>\d+)/respond')
+    def respond(self, request, request_id=None):
+        """Accepting shares the donor's name and phone with the requester (and only with them)."""
+        donor = self._own_profile()
+        body = RespondSerializer(data=request.data)
+        body.is_valid(raise_exception=True)
+        try:
+            response = matching.respond_to_request(donor, int(request_id), body.validated_data['answer'])
+        except DjangoValidationError as exc:
+            raise serializers.ValidationError(exc.messages)
+        return Response({'request': response.request_id, 'answer': response.answer})

@@ -58,7 +58,16 @@ function DonorDashboard() {
         <StatCard label="Availability" value={data.is_available ? 'Available' : 'Unavailable'} />
         <StatCard label="Completed donations" value={data.total_donations} hint={`${data.scheduled_donations} scheduled`} />
         <StatCard label="Unread notifications" value={data.unread_notifications} />
+        <StatCard label="Requests near you" value={data.matching_requests} hint="Open requests your blood group can serve" />
       </div>
+      {data.matching_requests > 0 && (
+        <Alert type="info">
+          {data.matching_requests} open request(s) match your blood group in your city.{" "}
+          <Link to="/donor/requests" className="underline">
+            Review requests
+          </Link>
+        </Alert>
+      )}
       <section>
         <div className="mb-2 flex items-center justify-between">
           <h2 className="text-lg font-medium text-gray-900">Recent donations</h2>

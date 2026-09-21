@@ -15,6 +15,7 @@ const emptyForm = {
   blood_group: '',
   units_required: 1,
   urgency: 'normal',
+  city: '',
   location: '',
   notes: '',
 }
@@ -44,6 +45,7 @@ function RequestForm() {
           blood_group: String(r.blood_group),
           units_required: r.units_required,
           urgency: r.urgency,
+          city: r.city,
           location: r.location,
           notes: r.notes,
         })
@@ -98,7 +100,10 @@ function RequestForm() {
         <option value="urgent">Urgent</option>
         <option value="critical">Critical</option>
       </FormField>
-      <FormField label="Location (hospital / city)" id="location" value={form.location} onChange={handleChange} required />
+      {needsPatient && (
+        <FormField label="City" id="city" value={form.city} onChange={handleChange} required />
+      )}
+      <FormField label="Location (hospital, ward)" id="location" value={form.location} onChange={handleChange} required />
       <FormField label="Notes" id="notes" as="textarea" rows={3} value={form.notes} onChange={handleChange} />
       <div className="flex gap-2">
         <Button type="submit" disabled={saving}>

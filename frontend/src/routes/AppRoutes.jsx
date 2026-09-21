@@ -14,13 +14,14 @@ import BankProfile from '../pages/bank/BankProfile'
 import DonorDashboard from '../pages/donor/DonorDashboard'
 import DonorDonations from '../pages/donor/DonorDonations'
 import DonorProfile from '../pages/donor/DonorProfile'
+import DonorRequests from '../pages/donor/DonorRequests'
 import ScheduleDonation from '../pages/donor/ScheduleDonation'
-import BloodAvailability from '../pages/hospital/BloodAvailability'
 import HospitalDashboard from '../pages/hospital/HospitalDashboard'
 import HospitalProfile from '../pages/hospital/HospitalProfile'
 import RequestDetail from '../pages/requests/RequestDetail'
 import RequestForm from '../pages/requests/RequestForm'
 import RequestList from '../pages/requests/RequestList'
+import SearchPage from '../pages/search/SearchPage'
 import { listBloodBanks, setBloodBankVerified } from '../services/bloodbanks'
 import { listHospitals, setHospitalVerified } from '../services/hospitals'
 import { ROLES } from '../utils/roles'
@@ -42,11 +43,13 @@ const donorChildren = (
     <Route path="profile" element={<DonorProfile />} />
     <Route path="donations" element={<DonorDonations />} />
     <Route path="schedule" element={<ScheduleDonation />} />
+    <Route path="requests" element={<DonorRequests />} />
   </>
 )
 
 const requesterChildren = (
   <>
+    <Route path="search" element={<SearchPage />} />
     <Route path="requests" element={<RequestList />} />
     <Route path="requests/new" element={<RequestForm />} />
     <Route path="requests/:id" element={<RequestDetail />} />
@@ -56,6 +59,7 @@ const requesterChildren = (
 
 const readOnlyRequestChildren = (
   <>
+    <Route path="search" element={<SearchPage />} />
     <Route path="requests" element={<RequestList />} />
     <Route path="requests/:id" element={<RequestDetail />} />
   </>
@@ -78,7 +82,6 @@ const adminChildren = (
 const hospitalChildren = (
   <>
     <Route path="profile" element={<HospitalProfile />} />
-    <Route path="availability" element={<BloodAvailability />} />
     {requesterChildren}
   </>
 )

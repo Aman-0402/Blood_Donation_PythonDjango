@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import Alert from '../../components/Alert'
 import Button from '../../components/Button'
+import MatchPanel from '../../components/MatchPanel'
 import StatusBadge from '../../components/StatusBadge'
 import { useAuth } from '../../hooks/useAuth'
 import { bankAction, cancelRequest, getRequest, getRequestHistory, setRequestStatus } from '../../services/requests'
@@ -159,6 +160,8 @@ function RequestDetail() {
           </div>
         </section>
       )}
+
+      {!isBank && <MatchPanel requestId={request.id} />}
 
       {!isBank && (
       <section>

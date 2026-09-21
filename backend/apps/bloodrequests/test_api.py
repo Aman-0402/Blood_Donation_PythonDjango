@@ -15,6 +15,7 @@ def payload(**overrides):
         'patient_name': 'Patient One',
         'contact_phone': '9999999999',
         'blood_group': blood_group('B-').id,
+        'city': 'Pune',
         'units_required': 2,
         'urgency': 'urgent',
         'location': 'City Hospital, Pune',

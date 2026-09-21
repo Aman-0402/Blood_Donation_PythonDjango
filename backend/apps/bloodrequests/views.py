@@ -9,10 +9,11 @@ from apps.accounts.models import Role
 from apps.accounts.permissions import IsAdminRole, role_permission
 from apps.bloodbanks.access import get_bank
 
-from . import fulfillment
-from .models import BloodRequest
+from . import fulfillment, matching
+from .models import BloodRequest, DonorResponse
 from .serializers import (
     BloodRequestSerializer,
+    DonorResponseListSerializer,
     RequestStatusHistorySerializer,
     StatusChangeSerializer,
 )
@@ -112,6 +113,19 @@ class BloodRequestViewSet(
     def history(self, request, pk=None):
         instance = self.get_object()
         return Response(RequestStatusHistorySerializer(instance.history.all(), many=True).data)
+
+    @action(detail=True, methods=['get'])
+    def matches(self, request, pk=None):
+        instance = self.get_object()
+        return Response(matching.matches_for_request(instance, city=request.query_params.get('city')))
+
+    @action(detail=True, methods=['get'])
+    def responses(self, request, pk=None):
+        instance = self.get_object()
+        accepted = instance.donor_responses.filter(
+            answer=DonorResponse.Answer.ACCEPTED
+        ).select_related('donor__user', 'donor__blood_group')
+        return Response(DonorResponseListSerializer(accepted, many=True).data)
 
     @action(detail=True, methods=['post'])
     def accept(self, request, pk=None):

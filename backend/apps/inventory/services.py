@@ -47,6 +47,41 @@ def stock_by_bloodbank(blood_group_id=None, city=None):
     )
 
 
+def search_stock(group_ids=None, city=None, bank_id=None, bank_name=None, min_units=None):
+    """Usable stock per verified bank and blood group, for public-facing search."""
+    stock = usable_stock().filter(bloodbank__user__is_verified=True)
+    if group_ids is not None:
+        stock = stock.filter(blood_group_id__in=group_ids)
+    if city:
+        stock = stock.filter(bloodbank__city__iexact=city)
+    if bank_id:
+        stock = stock.filter(bloodbank_id=bank_id)
+    if bank_name:
+        stock = stock.filter(bloodbank__name__icontains=bank_name)
+    rows = (
+        stock.values(
+            'bloodbank_id', 'bloodbank__name', 'bloodbank__city', 'bloodbank__address',
+            'blood_group_id', 'blood_group__name',
+        )
+        .annotate(units_available=Sum('units'))
+        .order_by('blood_group__name', '-units_available', 'bloodbank__name')
+    )
+    if min_units:
+        rows = rows.filter(units_available__gte=min_units)
+    return [
+        {
+            'bloodbank': row['bloodbank_id'],
+            'bloodbank_name': row['bloodbank__name'],
+            'city': row['bloodbank__city'],
+            'address': row['bloodbank__address'],
+            'blood_group': row['blood_group_id'],
+            'blood_group_name': row['blood_group__name'],
+            'units_available': row['units_available'],
+        }
+        for row in rows
+    ]
+
+
 def stock_by_blood_group(bloodbank=None):
     stock = usable_stock()
     if bloodbank is not None:

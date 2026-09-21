@@ -289,8 +289,8 @@ Tests:
 - Live smoke test against running Django + MySQL: 30 checks passed across schedule, complete, ledger link, eligibility lockout, rebook after interval, cancel and reject; test data removed afterwards
 - Frontend: lint clean, build succeeds. Not exercised in a real browser.
 
-Git commit: see next entry
-Git push: see next entry
+Git commit: 5ab5834646bd16fab15077330ae3f83f35bc25bc
+Git push: Successful
 
 Issues / decisions:
 - Assumptions (configurable or easy to change): quantity defaults to 1 unit and is set by the bank on completion (max 10); bookings up to 90 days ahead; at most one scheduled donation per donor.
@@ -299,5 +299,43 @@ Issues / decisions:
 - Blood group cannot change on the donor profile once donations exist (Phase 4 rule), which keeps donation blood groups consistent.
 - Notifications for scheduling/completion are not sent yet (Phase 10).
 - Smoke-script slip (not a product bug): tried booking day 91, beyond the 90-day horizon; day 90 is the first eligible date after a donation and is allowed.
+
+---
+
+## Phase 9 — Blood Search & Matching
+
+Status: Completed
+Date: 2026-09-22
+Completed:
+- ABO/Rh compatibility engine (`accounts/compatibility.py`), verified against the full 8x8 transfusion table; exact matches always rank before compatible ones
+- Search API under `/api/search/`: blood availability (group, compatible groups, city, bank id/name, minimum units), donor availability as banded counts, hospital directory; only verified banks' usable stock; hospitals and banks must be verified
+- Database-level eligible-donor query (`donors/eligibility.py: eligible_donors`) so search does not loop per donor; tests cross-check it against the Python rules on leap-day and boundary dates
+- Donor matching: donors see compatible open requests in their city without any patient details and can accept or decline; accepting requires availability and eligibility and is explicit consent to share name and phone with that requester only
+- Requester side: per-request matches (banks by fit, banded donor count) and the list of accepting donors; donor dashboard shows matching requests (closes the item deferred from Phase 4)
+- Requests gained a structured `city` (required for seekers, from the profile for hospitals); the old hospital availability page was replaced by a shared search page
+- Frontend (Axios): search page with three tabs, donor "requests near you" page with consent notice, match and offers panel on request detail, city field on the request form
+- API and database docs updated
+
+Files changed:
+- backend/apps/accounts/compatibility.py, backend/apps/search/*, backend/apps/bloodrequests/{models,serializers,views,matching,test_matching,tests,test_api}.py + migration, backend/apps/donors/{eligibility,views,test_eligible_query}.py, backend/apps/inventory/services.py, backend/apps/accounts/test_compatibility.py, backend/config/urls.py
+- frontend/src/pages/search/SearchPage.jsx, pages/donor/DonorRequests.jsx, components/MatchPanel.jsx, services/search.js, pages/requests/{RequestDetail,RequestForm}.jsx, pages/donor/DonorDashboard.jsx, layouts/navConfig.js, routes/AppRoutes.jsx (BloodAvailability page removed)
+- docs/*, Agent.md
+
+Tests:
+- Backend: 312 tests pass in the full run (about 51 new: compatibility matrix and properties, DB-vs-Python eligibility on four calendar scenarios, search permissions/ranking/filters/privacy/verified-only/expired-hidden, banded counts, donor request visibility/urgency ordering/hidden fields, respond rules incl. eligibility and closed requests, requester offers with consent, matches, request city rules)
+- Live smoke test against running Django + MySQL: 32 checks passed (search, banding, city requirement, donor visibility, consent-based offers, matches without leaking phone numbers, closed request rejects responses); test data removed afterwards
+- Frontend: lint clean, build succeeds. Not exercised in a real browser.
+- The full run caught a real regression: a Phase 2 model test built a seeker request without a city; fixed the fixture and added an explicit city-rule test.
+
+Git commit: see next entry
+Git push: see next entry
+
+Issues / decisions:
+- Privacy choices (mine, worth reviewing): donor search only returns banded counts; contact details are shared only after a donor explicitly accepts a specific request; banks never get donor search.
+- Phase 5 gap closed: matching by location needed a structured city; existing requests keep an empty city and will not match donors until edited.
+- `GET /hospitals/blood-availability/` (Phase 6) is kept but superseded by `/search/blood/`; consider removing it later to avoid duplication.
+- Donors are matched by exact city name (case-insensitive), not by distance; geographic radius search would need coordinates and is out of scope.
+- Notifying matching donors when a request is approved belongs to Phase 10.
+- Smoke-script slip (not a product bug): expected 3 to 5 compatible donors when only 2 existed.
 
 ---

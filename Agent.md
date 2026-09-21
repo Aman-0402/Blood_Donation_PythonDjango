@@ -4,7 +4,7 @@ Quick top-level view of what the AI agent has done and what remains. `docs/devel
 
 ## Current status
 
-Phase 8 complete. User approved Phases 3 to 6, then Phases 7 to 9, each committed and pushed separately. Phase 9 is next.
+Phase 9 complete. User approved Phases 3 to 9, each committed and pushed separately. Phase 10 onward is not approved: ask before starting.
 
 ## Completed
 
@@ -23,10 +23,11 @@ Phase 8 complete. User approved Phases 3 to 6, then Phases 7 to 9, each committe
 
 - **Phase 8 — Donations.** Donors schedule/cancel, banks complete/reject; completion atomically updates status, inventory (+ledger link) and donor history; eligibility judged on donation date; bank directory; frontend pages. 261 backend tests incl. real-thread double-complete test, live smoke test passed.
 
+- **Phase 9 — Search and matching.** ABO/Rh compatibility, search API (blood, donors as banded counts, hospitals), consent-based donor responses, per-request matches, structured request city, frontend search and donor request pages. 312 backend tests, live smoke test passed.
+
 ## In progress / next
 
-- Phase 9: blood search and matching (approved)
-- Phases 10 to 17: not approved yet, ask before starting
+- Phases 10 to 17: not approved yet, ask before starting (10 notifications, 11 dashboards, 12 admin panel, 13 reports, 14 UI/UX, 15 testing and security, 16 docs, 17 final review)
 - Open item: hospital "manage authorized staff" (Doc.md 3.4) is not covered by any phase
 
 ## Decisions and assumptions

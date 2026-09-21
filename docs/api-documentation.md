@@ -53,7 +53,7 @@ Eligibility rules (configurable via env, defaults in `config/settings.py`): age 
 
 ## Blood requests (Phase 5)
 
-Request fields: `id`, `requester`, `requester_username`, `hospital`, `hospital_name`, `patient_name`, `contact_phone`, `notes`, `blood_group`, `blood_group_name`, `units_required` (1 to 100), `urgency` (`normal`/`urgent`/`critical`), `location`, `status`, `fulfilled_by_bloodbank`, `fulfilled_by_bloodbank_name`, `created_at`, `updated_at`, plus computed `allowed_next_statuses`. `requester`, `hospital`, `status` and `fulfilled_by_bloodbank` are server-controlled and ignored if sent by the client.
+Request fields: `id`, `requester`, `requester_username`, `hospital`, `hospital_name`, `patient_name`, `contact_phone`, `notes`, `blood_group`, `blood_group_name`, `units_required` (1 to 100), `urgency` (`normal`/`urgent`/`critical`), `city` (Phase 9), `location`, `status`, `fulfilled_by_bloodbank`, `fulfilled_by_bloodbank_name`, `created_at`, `updated_at`, plus computed `allowed_next_statuses`. `requester`, `hospital`, `status` and `fulfilled_by_bloodbank` are server-controlled and ignored if sent by the client.
 
 Statuses and allowed transitions (enforced in `bloodrequests/workflow.py`, row-locked, every change written to the audit history):
 
@@ -152,6 +152,38 @@ Only `scheduled` donations can change state: to `completed` (bank), `rejected` (
 | GET | `/bloodbanks/directory/` | any signed-in user | Verified banks only: `id`, `name`, `city`, `address`. Optional `?city=`. |
 
 Admins are read-only here (`403` on actions). Eligibility and history feed the donor endpoints from Phase 4: completed donations count toward `total_donations` and push `next_eligible_date` out by the donation interval.
+
+## Search and matching (Phase 9)
+
+Matching uses standard ABO/Rh red-cell compatibility (`accounts/compatibility.py`, derived from the group name): O gives to all, AB receives from all, otherwise ABO letters must match; Rh negative gives to all, Rh positive only to Rh positive. Exact matches are always ranked before compatible ones.
+
+Search is open to signed-in seekers, hospitals, blood banks and admins. Hospitals and banks must be verified (`403` otherwise); donors get `403`. Only verified banks' usable stock is searched (available, not expired).
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/search/blood/` | Stock per bank and group: `bloodbank`, `bloodbank_name`, `city`, `address`, `blood_group`, `blood_group_name`, `units_available`, `exact`. Filters: `blood_group` (id), `compatible=true` (also include groups that can safely be given), `city`, `bank` (id), `bank_name` (contains), `min_units` (applies to the summed stock). Exact first, then most units. Invalid parameters give `400`. |
+| GET | `/search/donors/` | Eligible, available donors as banded counts per city and blood group: `city`, `blood_group_name`, `available_donors` (`1-2`, `3-5`, `6-10` or `10+`). Never returns individuals or contact data. Filters: `blood_group`, `compatible`, `city`. |
+| GET | `/search/hospitals/` | Verified hospitals: `id`, `name`, `city`, `address`. Filters `city`, `name`. |
+
+Requests now carry a structured `city` (added in Phase 9 so matching can work by location). Seekers must supply it (`400` if blank, whitespace trimmed); hospital requests take the city from the hospital profile.
+
+Donor side (donor role):
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/donors/me/requests/` | Open (`approved` or `matched`) requests in the donor's city whose blood group the donor can safely give to, most urgent first, paginated. Only `id`, `blood_group_name`, `units_required`, `urgency`, `city`, `location`, `hospital_name`, `status`, `created_at`, `my_response`. Patient, requester and contact details are never included. |
+| POST | `/donors/me/requests/{id}/respond/` | Body `answer`: `accepted` or `declined`. Must be a match and the request still open. Accepting also requires the donor to be available and eligible today. One row per donor and request; the donor can change their answer while the request is open. **Accepting is consent to share the donor's name and phone with that requester.** |
+
+`GET /donors/me/dashboard/` now includes `matching_requests` (count of the list above).
+
+Requester side (owner or admin; strangers get `404`, other roles `403`):
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/requests/{id}/matches/` | Suggested blood banks (top 10 with exact or compatible stock in the request's city, or `?city=`), `exact_stock_units`, `compatible_stock_units`, a banded `available_donors`, and `accepted_donors` (count). No individual donors. |
+| GET | `/requests/{id}/responses/` | Donors who accepted, with consented details: `donor_name`, `donor_phone`, `blood_group_name`, `city`. Declined donors are never shown. |
+
+`GET /hospitals/blood-availability/` (Phase 6) still works but `/search/blood/` supersedes it; the frontend now uses the search endpoint.
 
 ## Reference data and admin lookups (Phase 2, permissions updated in Phase 3)
 
