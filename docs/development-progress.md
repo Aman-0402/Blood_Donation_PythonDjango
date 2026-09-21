@@ -327,8 +327,8 @@ Tests:
 - Frontend: lint clean, build succeeds. Not exercised in a real browser.
 - The full run caught a real regression: a Phase 2 model test built a seeker request without a city; fixed the fixture and added an explicit city-rule test.
 
-Git commit: see next entry
-Git push: see next entry
+Git commit: 2f72902d2889bdf83b7f2fb2ebdee5c006054330
+Git push: Successful
 
 Issues / decisions:
 - Privacy choices (mine, worth reviewing): donor search only returns banded counts; contact details are shared only after a donor explicitly accepts a specific request; banks never get donor search.
