@@ -433,3 +433,33 @@ Issues / decisions:
 - Admin request/notification/inventory/donation "management" here is list + existing single-item actions (status change, mark read, etc. from earlier phases); bulk actions and CSV export are not built and weren't requested.
 
 ---
+
+## Phase 13 — Reports & Analytics
+
+Status: Completed
+Date: 2026-09-22
+Completed:
+- New admin-only, read-only `apps/reports` API: donation report (status/blood-group/monthly-trend/all-time units), request report (status/urgency/blood-group/completion rate/average fulfilment time), inventory report (current usable stock, expiring-soon), all computed on the fly from existing data — no new tables
+- Frontend: `AdminReports` page with three charts (completed donations by blood group, monthly units collected, requests by blood group) plus stat tiles for the rest — kept deliberately small per Doc.md's "do not overload dashboards with unnecessary charts"
+- Followed the project's `dataviz` skill for the charts: fixed 8-color categorical palette (validated against the light surface with the skill's script — passed, with a contrast WARN on 3 slots satisfied by direct value labels + a table-view toggle), single-hue blue line chart with hover tooltip, no dual axes, bars capped at 24px with rounded data-ends
+- Added `inventory/services.py: expiring_soon_all` (platform-wide version of the existing per-bank `expiring_soon`)
+
+Files changed:
+- backend/apps/reports/{views,urls,tests}.py (new app, not in INSTALLED_APPS — no models, same pattern as `apps.search`), backend/apps/inventory/services.py, backend/config/urls.py
+- frontend/src/pages/admin/AdminReports.jsx, components/charts/{BarChart,LineChart,palette}.js, services/reports.js, routes/AppRoutes.jsx, layouts/navConfig.js
+- docs/api-documentation.md, docs/development-progress.md, Agent.md
+
+Tests:
+- Backend: 362 tests pass (13 new: report access control, donation report status/group/monthly-window/all-time-total correctness, request report counts/completion-rate/zero-request edge case/average fulfilment time, inventory report stock and expiring-soon including that already-expired stock is excluded from "expiring soon")
+- Live smoke test against running Django + MySQL: 8 checks passed across all three report endpoints; test data removed afterwards
+- Frontend: lint clean, build succeeds. Chart rendering/layout was not visually verified in a real browser (no browser automation available); reviewed by re-reading the dataviz skill's mark specs against the code.
+
+Git commit: see next entry
+Git push: see next entry
+
+Issues / decisions:
+- Reports are computed live from existing rows (no caching/materialization). Fine at current data volumes; would need revisiting if the dataset grows large.
+- Monthly donation trend is a fixed 12-month window with explicit zero-filling for months with no completed donations, so the line chart never silently skips a month.
+- Dark mode was not added to the charts since the rest of the app has no dark mode toggle; would be inconsistent scope beyond what's built. The dataviz skill's dark-mode steps are documented if that's added later.
+
+---

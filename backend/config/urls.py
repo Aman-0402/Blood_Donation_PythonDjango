@@ -29,4 +29,5 @@ urlpatterns = [
     path('api/requests/', include('apps.bloodrequests.urls')),
     path('api/notifications/', include('apps.notifications.urls')),
     path('api/search/', include('apps.search.urls')),
+    path('api/reports/', include('apps.reports.urls')),
 ]

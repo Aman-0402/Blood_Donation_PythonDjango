@@ -8,6 +8,7 @@ export const NAV_ITEMS = {
     { to: '/admin/requests', label: 'Blood requests' },
     { to: '/admin/inventory', label: 'Inventory' },
     { to: '/admin/donations', label: 'Donations' },
+    { to: '/admin/reports', label: 'Reports' },
     { to: '/admin/search', label: 'Search' },
   ],
   donor: [

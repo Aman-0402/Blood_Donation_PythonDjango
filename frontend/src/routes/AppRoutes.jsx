@@ -5,6 +5,7 @@ import Login from '../pages/Login'
 import Register from '../pages/Register'
 import AdminDashboard from '../pages/admin/AdminDashboard'
 import AdminDonations from '../pages/admin/AdminDonations'
+import AdminReports from '../pages/admin/AdminReports'
 import AdminInventory from '../pages/admin/AdminInventory'
 import AdminUsers from '../pages/admin/AdminUsers'
 import AdminVerification from '../pages/admin/AdminVerification'
@@ -84,6 +85,7 @@ const adminChildren = (
     <Route path="users" element={<AdminUsers />} />
     <Route path="inventory" element={<AdminInventory />} />
     <Route path="donations" element={<AdminDonations />} />
+    <Route path="reports" element={<AdminReports />} />
     <Route
       path="donors"
       element={<AdminVerification title="Donors" fetchList={listDonors} setVerified={setDonorVerified} columns={DONOR_COLUMNS} />}

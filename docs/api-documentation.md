@@ -208,6 +208,16 @@ Automatic triggers (fired inside the same transaction as the state change, so th
 | A donation is rejected | The donor, with the reason. |
 | A hospital or blood bank is verified or unverified | That organisation's account. |
 
+## Reports & analytics (Phase 13)
+
+Admin-only, computed on the fly (no separate report tables). `GET` only.
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/reports/donations/` | `by_status` (every status), `by_blood_group` (completed donations, all 8 groups), `monthly` (last 12 calendar months incl. zero months: `{month: "YYYY-MM", count, units}`), `total_units_collected` (all time, completed only). |
+| GET | `/reports/requests/` | `total_requests`, `by_status`, `by_urgency`, `by_blood_group`, `completion_rate` (% completed of total, 1 decimal), `closed_requests` (completed + cancelled + rejected), `avg_fulfillment_hours` (mean `created_at`→`updated_at` for completed requests, `null` if none). |
+| GET | `/reports/inventory/` | `by_blood_group` (current usable stock, all 8 groups, all banks — reuses the Phase 7 stock service), `expiring_within_7_days` (list of `{blood_group_name, units}`, groups with none omitted). |
+
 ## Admin panel (Phase 12)
 
 Admin-only controls, layered on top of endpoints built in earlier phases.

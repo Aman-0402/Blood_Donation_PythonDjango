@@ -107,6 +107,19 @@ def expiring_soon(bloodbank, days=7):
     return {row['blood_group_id']: row['units'] for row in rows}
 
 
+def expiring_soon_all(days=7):
+    """Same as expiring_soon but across every bank, keyed by blood group name for reporting."""
+    today = timezone.localdate()
+    rows = (
+        usable_stock()
+        .filter(expiry_date__lte=today + timedelta(days=days))
+        .values('blood_group__name')
+        .annotate(units=Sum('units'))
+        .order_by('blood_group__name')
+    )
+    return [{'blood_group_name': row['blood_group__name'], 'units': row['units']} for row in rows]
+
+
 def _check_units(units):
     if not 1 <= units <= MAX_UNITS_PER_OPERATION:
         raise ValidationError(f'Units must be between 1 and {MAX_UNITS_PER_OPERATION}.')
