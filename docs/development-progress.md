@@ -361,8 +361,8 @@ Tests:
 - Live smoke test against running Django + MySQL: 8 checks passed end to end (hospital verification notice, donor alerted on request approval, seeker notified, mark-read, cross-user 404); test data removed afterwards
 - Frontend: lint clean, build succeeds. Not exercised in a real browser.
 
-Git commit: see next entry
-Git push: see next entry
+Git commit: 5517fe2116ad40904581e8974f9181a106f6ac21
+Git push: Successful
 
 Issues / decisions:
 - Donor fan-out on approval is capped at 100 notifications per request to bound bulk writes; not otherwise rate-limited or batched.
