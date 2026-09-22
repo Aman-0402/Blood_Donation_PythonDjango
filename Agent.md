@@ -4,7 +4,7 @@ Quick top-level view of what the AI agent has done and what remains. `docs/devel
 
 ## Current status
 
-Phase 11 complete. User approved Phases 10-12, plus a UI upgrade (1450px max content width, responsive) folded into that work. Phase 12 is next.
+Phase 12 complete. That closes the batch of Phases 10-12 the user approved together, plus the UI upgrade (1450px max content width, responsive) folded into that work. Phases 13-17 not approved yet.
 
 ## Completed
 
@@ -29,10 +29,11 @@ Phase 11 complete. User approved Phases 10-12, plus a UI upgrade (1450px max con
 
 - **Phase 11 — Dashboards.** Admin dashboard (counts across users/donors/hospitals/banks/requests/donations/inventory), seeker dashboard, blood bank dashboard (ledger-derived collected/issued/expired). 340 backend tests, live smoke test passed.
 
+- **Phase 12 — Admin panel.** User management (list/filter/deactivate/activate with self- and admin-lockout guards), donor verification (parity with hospital/bank), inventory and donation monitoring pages, generalized `AdminVerification` component. 352 backend tests, live smoke test passed.
+
 ## In progress / next
 
-- Phase 12: admin panel (approved)
-- Phases 13 to 17: not approved yet, ask before starting
+- Phases 13 to 17: not approved yet, ask before starting (13 reports, 14 UI/UX, 15 testing and security, 16 docs, 17 final review)
 - Open item: hospital "manage authorized staff" (Doc.md 3.4) is not covered by any phase
 
 ## Decisions and assumptions

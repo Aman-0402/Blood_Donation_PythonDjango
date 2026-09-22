@@ -208,6 +208,21 @@ Automatic triggers (fired inside the same transaction as the state change, so th
 | A donation is rejected | The donor, with the reason. |
 | A hospital or blood bank is verified or unverified | That organisation's account. |
 
+## Admin panel (Phase 12)
+
+Admin-only controls, layered on top of endpoints built in earlier phases.
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/users/` | User management: list/detail. Filters `?role=`, `?is_active=true` or `?is_active=false`, `?search=` (username contains). Never exposes passwords. |
+| POST | `/users/{id}/deactivate/`, `/users/{id}/activate/` | Deactivating a user prevents login (`401` on their next login attempt); `400` if the target is yourself or another admin account. Reactivation sends a notification. |
+| POST | `/donors/{id}/verify/`, `/donors/{id}/unverify/` | Donor verification, symmetric with hospital/bank verification (Phases 6 and 7). Purely informational for now: no donor action currently checks it. `GET /donors/` also takes `?verified=true` or `?verified=false`. |
+| GET | `/inventory/`, `/inventory/transactions/` | Already admin-readable since Phase 7; used here for cross-bank inventory monitoring. |
+| GET | `/donations/` | Already admin-readable since Phase 8; used here for cross-bank donation monitoring. |
+| GET | `/notifications/` | Already admin-readable since Phase 10. |
+
+Hospital and blood bank verification, and the admin request-status workflow, were already admin panel functionality from Phases 5 to 7.
+
 ## Dashboards (Phase 11)
 
 Per-role summary endpoints, all `GET`. Donor and hospital dashboards were introduced in Phases 4 and 6; the three below are new.

@@ -1,9 +1,13 @@
 export const NAV_ITEMS = {
   admin: [
     { to: '/admin', label: 'Dashboard', end: true },
-    { to: '/admin/requests', label: 'Blood requests' },
+    { to: '/admin/users', label: 'Users' },
+    { to: '/admin/donors', label: 'Donors' },
     { to: '/admin/hospitals', label: 'Hospitals' },
     { to: '/admin/bloodbanks', label: 'Blood banks' },
+    { to: '/admin/requests', label: 'Blood requests' },
+    { to: '/admin/inventory', label: 'Inventory' },
+    { to: '/admin/donations', label: 'Donations' },
     { to: '/admin/search', label: 'Search' },
   ],
   donor: [

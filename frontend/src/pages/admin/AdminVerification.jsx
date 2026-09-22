@@ -4,7 +4,13 @@ import Button from '../../components/Button'
 import StatusBadge from '../../components/StatusBadge'
 import { extractError } from '../../utils/errors'
 
-function AdminVerification({ title, fetchList, setVerified }) {
+const DEFAULT_COLUMNS = [
+  { label: 'Name', render: (org) => org.name },
+  { label: 'City', render: (org) => org.city },
+  { label: 'License', render: (org) => org.license_number },
+]
+
+function AdminVerification({ title, fetchList, setVerified, columns = DEFAULT_COLUMNS }) {
   const [filter, setFilter] = useState('false')
   const [page, setPage] = useState(1)
   const [data, setData] = useState(null)
@@ -72,29 +78,33 @@ function AdminVerification({ title, fetchList, setVerified }) {
             <table className="min-w-full text-left text-sm">
               <thead className="bg-gray-50 text-gray-600">
                 <tr>
-                  <th className="px-4 py-2 font-medium">Name</th>
-                  <th className="px-4 py-2 font-medium">City</th>
-                  <th className="px-4 py-2 font-medium">License</th>
+                  {columns.map((c) => (
+                    <th key={c.label} className="px-4 py-2 font-medium">
+                      {c.label}
+                    </th>
+                  ))}
                   <th className="px-4 py-2 font-medium">Status</th>
                   <th className="px-4 py-2 font-medium" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {data.results.map((h) => (
-                  <tr key={h.id}>
-                    <td className="px-4 py-2">{h.name}</td>
-                    <td className="px-4 py-2">{h.city}</td>
-                    <td className="px-4 py-2">{h.license_number}</td>
+                {data.results.map((org) => (
+                  <tr key={org.id}>
+                    {columns.map((c) => (
+                      <td key={c.label} className="px-4 py-2">
+                        {c.render(org)}
+                      </td>
+                    ))}
                     <td className="px-4 py-2">
-                      <StatusBadge value={h.is_verified ? 'verified' : 'unverified'} />
+                      <StatusBadge value={org.is_verified ? 'verified' : 'unverified'} />
                     </td>
                     <td className="px-4 py-2 text-right">
                       <Button
-                        variant={h.is_verified ? 'danger' : 'primary'}
-                        disabled={busyId === h.id}
-                        onClick={() => toggle(h)}
+                        variant={org.is_verified ? 'danger' : 'primary'}
+                        disabled={busyId === org.id}
+                        onClick={() => toggle(org)}
                       >
-                        {h.is_verified ? 'Unverify' : 'Verify'}
+                        {org.is_verified ? 'Unverify' : 'Verify'}
                       </Button>
                     </td>
                   </tr>

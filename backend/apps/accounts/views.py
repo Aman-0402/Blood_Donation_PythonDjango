@@ -1,4 +1,5 @@
-from rest_framework import generics, status, viewsets
+from rest_framework import generics, mixins, status, viewsets
+from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -6,7 +7,9 @@ from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
-from .models import BloodGroup, User
+from apps.notifications.services import notify
+
+from .models import BloodGroup, Role, User
 from .permissions import IsAdminRole
 from .serializers import (
     BloodGroupSerializer,
@@ -19,10 +22,42 @@ from .serializers import (
 )
 
 
-class UserViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = User.objects.all().order_by('id')
+class UserViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     serializer_class = UserSerializer
     permission_classes = [IsAdminRole]
+
+    def get_queryset(self):
+        queryset = User.objects.all().order_by('id')
+        role = self.request.query_params.get('role')
+        if role:
+            queryset = queryset.filter(role=role)
+        is_active = self.request.query_params.get('is_active')
+        if is_active in ('true', 'false'):
+            queryset = queryset.filter(is_active=is_active == 'true')
+        search = self.request.query_params.get('search')
+        if search:
+            queryset = queryset.filter(username__icontains=search)
+        return queryset
+
+    @action(detail=True, methods=['post'])
+    def deactivate(self, request, pk=None):
+        return self._set_active(False)
+
+    @action(detail=True, methods=['post'])
+    def activate(self, request, pk=None):
+        return self._set_active(True)
+
+    def _set_active(self, value):
+        target = self.get_object()
+        if target.pk == self.request.user.pk:
+            return Response({'detail': 'You cannot deactivate your own account.'}, status=status.HTTP_400_BAD_REQUEST)
+        if target.role == Role.ADMIN and not value:
+            return Response({'detail': 'Admin accounts cannot be deactivated here.'}, status=status.HTTP_400_BAD_REQUEST)
+        target.is_active = value
+        target.save(update_fields=['is_active', 'updated_at'])
+        if value:
+            notify(target, 'alert', 'Your account has been reactivated.', related_object_type='user', related_object_id=target.pk)
+        return Response(self.get_serializer(target).data)
 
 
 class BloodGroupViewSet(viewsets.ReadOnlyModelViewSet):

@@ -8,12 +8,13 @@ from .models import Donor
 
 class DonorSerializer(ModelCleanMixin, serializers.ModelSerializer):
     username = serializers.CharField(source='user.username', read_only=True)
+    is_verified = serializers.BooleanField(source='user.is_verified', read_only=True)
     blood_group_name = serializers.CharField(source='blood_group.name', read_only=True)
 
     class Meta:
         model = Donor
         fields = [
-            'id', 'user', 'username', 'blood_group', 'blood_group_name', 'address',
+            'id', 'user', 'username', 'is_verified', 'blood_group', 'blood_group_name', 'address',
             'city', 'date_of_birth', 'last_donation_date', 'is_available',
             'eligibility_notes', 'created_at', 'updated_at',
         ]

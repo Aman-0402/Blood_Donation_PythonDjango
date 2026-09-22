@@ -4,6 +4,9 @@ import Home from '../pages/Home'
 import Login from '../pages/Login'
 import Register from '../pages/Register'
 import AdminDashboard from '../pages/admin/AdminDashboard'
+import AdminDonations from '../pages/admin/AdminDonations'
+import AdminInventory from '../pages/admin/AdminInventory'
+import AdminUsers from '../pages/admin/AdminUsers'
 import AdminVerification from '../pages/admin/AdminVerification'
 import BankDonations from '../pages/bank/BankDonations'
 import BankHistory from '../pages/bank/BankHistory'
@@ -25,6 +28,7 @@ import RequestList from '../pages/requests/RequestList'
 import SearchPage from '../pages/search/SearchPage'
 import SeekerDashboard from '../pages/seeker/SeekerDashboard'
 import { listBloodBanks, setBloodBankVerified } from '../services/bloodbanks'
+import { listDonors, setDonorVerified } from '../services/donors'
 import { listHospitals, setHospitalVerified } from '../services/hospitals'
 import { ROLES } from '../utils/roles'
 import ProtectedRoute from './ProtectedRoute'
@@ -68,9 +72,22 @@ const readOnlyRequestChildren = (
   </>
 )
 
+const DONOR_COLUMNS = [
+  { label: 'Username', render: (d) => d.username },
+  { label: 'City', render: (d) => d.city },
+  { label: 'Blood group', render: (d) => d.blood_group_name },
+]
+
 const adminChildren = (
   <>
     {readOnlyRequestChildren}
+    <Route path="users" element={<AdminUsers />} />
+    <Route path="inventory" element={<AdminInventory />} />
+    <Route path="donations" element={<AdminDonations />} />
+    <Route
+      path="donors"
+      element={<AdminVerification title="Donors" fetchList={listDonors} setVerified={setDonorVerified} columns={DONOR_COLUMNS} />}
+    />
     <Route
       path="hospitals"
       element={<AdminVerification title="Hospitals" fetchList={listHospitals} setVerified={setHospitalVerified} />}

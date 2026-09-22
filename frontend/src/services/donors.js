@@ -29,3 +29,13 @@ export async function getMyDonations(page = 1) {
   const { data } = await api.get('/donors/me/donations/', { params: { page } })
   return data
 }
+
+export async function listDonors(params = {}) {
+  const { data } = await api.get('/donors/', { params })
+  return data
+}
+
+export async function setDonorVerified(id, verified) {
+  const { data } = await api.post(`/donors/${id}/${verified ? 'verify' : 'unverify'}/`)
+  return data
+}

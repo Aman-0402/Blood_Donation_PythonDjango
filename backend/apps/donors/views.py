@@ -11,6 +11,7 @@ from apps.bloodrequests.serializers import DonorRequestSerializer, RespondSerial
 from apps.donations.models import Donation
 from apps.donations.serializers import DonationSerializer
 from apps.notifications.models import Notification
+from apps.notifications.services import notify
 
 from .models import Donor
 from .serializers import DonorSerializer
@@ -24,7 +25,6 @@ class DonorViewSet(
     mixins.CreateModelMixin,
     viewsets.GenericViewSet,
 ):
-    queryset = Donor.objects.select_related('user', 'blood_group').order_by('id')
     serializer_class = DonorSerializer
 
     def get_permissions(self):
@@ -32,8 +32,34 @@ class DonorViewSet(
             return [IsDonor()]
         return [IsAdminRole()]
 
+    def get_queryset(self):
+        queryset = Donor.objects.select_related('user', 'blood_group').order_by('id')
+        verified = self.request.query_params.get('verified')
+        if verified in ('true', 'false'):
+            queryset = queryset.filter(user__is_verified=verified == 'true')
+        return queryset
+
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+    @action(detail=True, methods=['post'])
+    def verify(self, request, pk=None):
+        return self._set_verified(True)
+
+    @action(detail=True, methods=['post'])
+    def unverify(self, request, pk=None):
+        return self._set_verified(False)
+
+    def _set_verified(self, value):
+        donor = self.get_object()
+        donor.user.is_verified = value
+        donor.user.save(update_fields=['is_verified', 'updated_at'])
+        notify(
+            donor.user, 'verification',
+            'Your donor account has been verified.' if value else 'Your donor verification was revoked.',
+            related_object_type='donor', related_object_id=donor.pk,
+        )
+        return Response(self.get_serializer(donor).data)
 
     def _own_profile(self):
         try:

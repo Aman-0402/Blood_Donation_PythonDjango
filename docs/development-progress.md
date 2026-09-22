@@ -401,3 +401,35 @@ Issues / decisions:
 - `my_request_counts` on the bank dashboard counts requests this bank has ever fulfilled, not stock movements; `units_*` figures come from the ledger and are exact.
 
 ---
+
+## Phase 12 — Admin Panel
+
+Status: Completed
+Date: 2026-09-22
+Completed:
+- User management: filterable list (role, active state, username search), deactivate/activate (blocks/restores login), guarded against self-deactivation and deactivating other admins
+- Donor verification added for parity with the existing hospital/bank verification (Doc.md §3.1 lists it as an admin duty); purely informational — no donor-facing action currently checks it, matching the fact that donor actions were never gated by verification in earlier phases
+- Inventory monitoring and donation monitoring surfaced in the admin UI, reusing the admin-readable endpoints already built in Phases 7 and 8
+- `AdminVerification` generalised with a `columns` prop so hospitals, blood banks and donors (different shapes) share one component instead of three near-duplicates
+- Frontend: Users, Donors, Inventory (batches + ledger tabs), Donations admin pages; nav updated
+
+Files changed:
+- backend/apps/accounts/{views,test_admin_users}.py, backend/apps/donors/{views,serializers,test_verification}.py
+- frontend/src/pages/admin/{AdminUsers,AdminInventory,AdminDonations,AdminVerification}.jsx, services/{admin,donors}.js, routes/AppRoutes.jsx, layouts/navConfig.js
+- docs/api-documentation.md, docs/development-progress.md, Agent.md
+
+Tests:
+- Backend: 352 tests pass (17 new: user list filters, deactivate/activate incl. self/admin guards and that deactivation actually blocks login, donor verify/unverify with notification, verified filter on donor list)
+- A real gap caught by the first test run: `DonorSerializer` had no `is_verified` field (unlike Hospital/BloodBank), so the verify endpoint's response silently omitted it; added the field
+- Live smoke test against running Django + MySQL: 10 checks passed, including a deactivated user actually failing login and succeeding again after reactivation; test data removed afterwards
+- Frontend: lint clean, build succeeds. Not exercised in a real browser.
+
+Git commit: see next entry
+Git push: see next entry
+
+Issues / decisions:
+- Deactivating a user does not cancel their in-flight requests/donations or revoke already-issued access tokens (those still work until they expire, up to 30 minutes); only new logins are blocked. Token revocation-on-deactivation would need a larger change and is not in Doc.md's Phase 12 scope.
+- Donor verification has no gating effect yet; if a future requirement needs it (e.g. requiring verified donors to donate), that's a small addition to `donations/services.py`.
+- Admin request/notification/inventory/donation "management" here is list + existing single-item actions (status change, mark read, etc. from earlier phases); bulk actions and CSV export are not built and weren't requested.
+
+---
