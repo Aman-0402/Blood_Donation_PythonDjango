@@ -393,8 +393,8 @@ Tests:
 - Live smoke test against running Django + MySQL: 7 checks passed (admin/seeker dashboard access, 8-group inventory shape, bank dashboard before and after profile creation); test data removed afterwards
 - Frontend: lint clean, build succeeds. Not exercised in a real browser.
 
-Git commit: see next entry
-Git push: see next entry
+Git commit: 0147aa10a27aeda0f30d46a1b44969aa3ca35c28
+Git push: Successful
 
 Issues / decisions:
 - Kept dashboards to counts and short recent lists per Doc.md's Phase 11 scope; deeper analytics/charts are Phase 13 (Reports).
