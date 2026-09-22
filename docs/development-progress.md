@@ -424,8 +424,8 @@ Tests:
 - Live smoke test against running Django + MySQL: 10 checks passed, including a deactivated user actually failing login and succeeding again after reactivation; test data removed afterwards
 - Frontend: lint clean, build succeeds. Not exercised in a real browser.
 
-Git commit: see next entry
-Git push: see next entry
+Git commit: b355367ef5cbf77bf7c954dcf19a6d9719fa6d61
+Git push: Successful
 
 Issues / decisions:
 - Deactivating a user does not cancel their in-flight requests/donations or revoke already-issued access tokens (those still work until they expire, up to 30 minutes); only new logins are blocked. Token revocation-on-deactivation would need a larger change and is not in Doc.md's Phase 12 scope.
