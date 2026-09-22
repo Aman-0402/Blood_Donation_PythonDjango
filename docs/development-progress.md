@@ -454,8 +454,8 @@ Tests:
 - Live smoke test against running Django + MySQL: 8 checks passed across all three report endpoints; test data removed afterwards
 - Frontend: lint clean, build succeeds. Chart rendering/layout was not visually verified in a real browser (no browser automation available); reviewed by re-reading the dataviz skill's mark specs against the code.
 
-Git commit: see next entry
-Git push: see next entry
+Git commit: 222941ce9aa2952e4b135b4878978defc92bff3c
+Git push: Successful
 
 Issues / decisions:
 - Reports are computed live from existing rows (no caching/materialization). Fine at current data volumes; would need revisiting if the dataset grows large.
