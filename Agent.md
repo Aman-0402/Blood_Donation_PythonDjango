@@ -38,6 +38,10 @@ Phase 13 complete (user said "start" after Phase 12, taken as the next phase in 
 - Phases 14 to 17: not approved yet, ask before starting (14 UI/UX refinement, 15 testing and security, 16 docs, 17 final review)
 - Open item: hospital "manage authorized staff" (Doc.md 3.4) is not covered by any phase
 
+## Dev tooling
+
+- `python manage.py seed_demo_data` — seeds 1000 random Indian demo users (700 donors, 150 seekers, 75 hospitals, 75 blood banks) with profiles, ~300 donations (recent ones via the real schedule/complete flow, older months backfilled directly since the live API can't backdate bookings), ~200 blood requests, and inventory. Every username starts with `demo_`; all share password `Demo@12345`. `--flush` deletes them; `--flush --no-reseed` just deletes. Not run automatically anywhere. Local dev DB only — never run against anything real.
+
 ## Decisions and assumptions
 
 - MySQL `blood_db`, user `root`, blank password: local dev only, in gitignored `backend/.env`.
