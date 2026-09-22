@@ -4,7 +4,7 @@ Quick top-level view of what the AI agent has done and what remains. `docs/devel
 
 ## Current status
 
-Phase 9 complete. User approved Phases 3 to 9, each committed and pushed separately. Phase 10 onward is not approved: ask before starting.
+Phase 10 complete. User approved Phases 10-12 next, plus a UI upgrade (1450px max content width, responsive) folded into that work. Phase 11 is next.
 
 ## Completed
 
@@ -25,9 +25,13 @@ Phase 9 complete. User approved Phases 3 to 9, each committed and pushed separat
 
 - **Phase 9 — Search and matching.** ABO/Rh compatibility, search API (blood, donors as banded counts, hospitals), consent-based donor responses, per-request matches, structured request city, frontend search and donor request pages. 312 backend tests, live smoke test passed.
 
+- **Phase 10 — Notifications.** In-app notification API (list/unread_count/mark read/mark all), triggers on request status change, donor accept, donation schedule/complete/reject, org verification. UI upgrade: shared 1450px container, sticky header with notification bell, responsive drawer sidebar. 331 backend tests, live smoke test passed. Also fixed a `transaction.on_commit`-in-`TestCase` bug found by the test run.
+
 ## In progress / next
 
-- Phases 10 to 17: not approved yet, ask before starting (10 notifications, 11 dashboards, 12 admin panel, 13 reports, 14 UI/UX, 15 testing and security, 16 docs, 17 final review)
+- Phase 11: dashboards (approved)
+- Phase 12: admin panel (approved)
+- Phases 13 to 17: not approved yet, ask before starting
 - Open item: hospital "manage authorized staff" (Doc.md 3.4) is not covered by any phase
 
 ## Decisions and assumptions

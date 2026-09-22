@@ -9,6 +9,7 @@ from apps.bloodrequests.models import BloodRequest
 from apps.bloodrequests.serializers import BloodRequestSerializer
 from apps.inventory.services import stock_by_blood_group, stock_by_bloodbank
 from apps.notifications.models import Notification
+from apps.notifications.services import notify
 
 from .models import Hospital
 from .serializers import AvailabilityQuerySerializer, HospitalSerializer
@@ -118,4 +119,9 @@ class HospitalViewSet(
         hospital = self.get_object()
         hospital.user.is_verified = value
         hospital.user.save(update_fields=['is_verified', 'updated_at'])
+        notify(
+            hospital.user, 'verification',
+            'Your hospital account has been verified.' if value else 'Your hospital verification was revoked.',
+            related_object_type='hospital', related_object_id=hospital.pk,
+        )
         return Response(self.get_serializer(hospital).data)

@@ -8,6 +8,7 @@ from django.utils import timezone
 from apps.donors.eligibility import compute_eligibility
 from apps.donors.models import Donor
 from apps.inventory.services import record_collection
+from apps.notifications.services import notify
 
 from .models import MAX_DONATION_UNITS, Donation
 
@@ -36,13 +37,19 @@ def schedule_donation(donor, bloodbank, donation_date, collection_location='', u
             raise ValidationError(
                 ['You are not eligible to donate on that date.', *eligibility['eligibility_reasons']]
             )
-        return Donation.objects.create(
+        donation = Donation.objects.create(
             donor=donor,
             bloodbank=bloodbank,
             blood_group=donor.blood_group,
             donation_date=donation_date,
             collection_location=collection_location or bloodbank.address or bloodbank.name,
         )
+        notify(
+            bloodbank.user, 'donation',
+            f'{donor.user.get_full_name() or donor.user.username} scheduled a {donor.blood_group.name} donation on {donation_date}.',
+            related_object_type='donation', related_object_id=donation.pk,
+        )
+        return donation
 
 
 def _locked_scheduled(donation_id):
@@ -72,6 +79,11 @@ def reject_donation(donation_id, bloodbank, reason):
         donation.status = Status.REJECTED
         donation.rejection_reason = reason[:255]
         donation.save(update_fields=['status', 'rejection_reason', 'updated_at'])
+        notify(
+            donation.donor.user, 'donation',
+            f'Your scheduled donation on {donation.donation_date} was declined: {reason[:255]}',
+            related_object_type='donation', related_object_id=donation.pk,
+        )
     return donation
 
 
@@ -96,10 +108,15 @@ def complete_donation(donation_id, bloodbank, user, quantity=1):
             note=f'Donation #{donation.pk}',
             donation=donation,
         )
-        donor = Donor.objects.select_for_update().get(pk=donation.donor_id)
+        donor = Donor.objects.select_for_update().select_related('user').get(pk=donation.donor_id)
         if donor.last_donation_date is None or donor.last_donation_date < donation.donation_date:
             donor.last_donation_date = donation.donation_date
             donor.save(update_fields=['last_donation_date', 'updated_at'])
+        notify(
+            donor.user, 'donation',
+            f'Thank you! Your {donation.quantity} unit donation on {donation.donation_date} was recorded.',
+            related_object_type='donation', related_object_id=donation.pk,
+        )
     return donation
 
 

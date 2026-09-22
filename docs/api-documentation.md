@@ -185,6 +185,29 @@ Requester side (owner or admin; strangers get `404`, other roles `403`):
 
 `GET /hospitals/blood-availability/` (Phase 6) still works but `/search/blood/` supersedes it; the frontend now uses the search endpoint.
 
+## Notifications (Phase 10)
+
+In-app only (per Doc.md; email/SMS deferred). Fields: `id`, `type` (`request`/`donation`/`status_change`/`verification`/`alert`), `message`, `related_object_type`, `related_object_id`, `is_read`, `created_at`. Newest first, paginated.
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/notifications/`, `/notifications/{id}/` | any user | Own notifications (admin sees everyone's, for oversight; still cannot mark others' read). Filter `?is_read=true` or `?is_read=false`. |
+| GET | `/notifications/unread_count/` | any user | `{count}`, own unread only. |
+| POST | `/notifications/{id}/read/` | any user | Marks one of the caller's own as read; `404` for anyone else's (including admin). |
+| POST | `/notifications/read-all/` | any user | Marks all of the caller's unread as read; `{updated: <n>}`. |
+
+Automatic triggers (fired inside the same transaction as the state change, so they roll back with it):
+
+| Event | Who is notified |
+|-------|------------------|
+| Blood request status changes | The requester, unless they made the change themselves (e.g. their own cancel). |
+| A request is approved | Eligible, available donors in the request's city who can safely give that blood group (capped at 100 to bound bulk sends). |
+| A donor accepts a request | The requester, naming the donor. |
+| A donation is scheduled | The blood bank. |
+| A donation is completed | The donor. |
+| A donation is rejected | The donor, with the reason. |
+| A hospital or blood bank is verified or unverified | That organisation's account. |
+
 ## Reference data and admin lookups (Phase 2, permissions updated in Phase 3)
 
 | Method | Path | Auth | Description |

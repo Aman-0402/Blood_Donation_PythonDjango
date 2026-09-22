@@ -18,6 +18,7 @@ import DonorRequests from '../pages/donor/DonorRequests'
 import ScheduleDonation from '../pages/donor/ScheduleDonation'
 import HospitalDashboard from '../pages/hospital/HospitalDashboard'
 import HospitalProfile from '../pages/hospital/HospitalProfile'
+import NotificationsPage from '../pages/NotificationsPage'
 import RequestDetail from '../pages/requests/RequestDetail'
 import RequestForm from '../pages/requests/RequestForm'
 import RequestList from '../pages/requests/RequestList'
@@ -32,6 +33,7 @@ function roleRoutes(role, { index = <RoleHome />, children = null } = {}) {
     <Route element={<ProtectedRoute roles={[role]} />}>
       <Route path={`/${role}`} element={<DashboardLayout />}>
         <Route index element={index} />
+        <Route path="notifications" element={<NotificationsPage />} />
         {children}
       </Route>
     </Route>

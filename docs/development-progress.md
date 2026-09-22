@@ -339,3 +339,34 @@ Issues / decisions:
 - Smoke-script slip (not a product bug): expected 3 to 5 compatible donors when only 2 existed.
 
 ---
+
+## Phase 10 — Notification System
+
+Status: Completed
+Date: 2026-09-22
+Completed:
+- In-app notification API: own list/detail, `unread_count`, mark one or all read; admin can view everyone's for oversight but cannot mark others' read (`404`, consistent with the rest of the app hiding resources you can't touch)
+- Automatic triggers wired into the existing service layer at the point state actually changes: request status change (skips self-notifying the actor), request approval alerting eligible nearby donors, a donor accepting a request, donation scheduled/completed/rejected, hospital/bank verify/unverify
+- Frontend: notification bell in the header (unread badge, dropdown, polls every 30s) plus a full notifications page with a read/unread filter, on every role
+- UI upgrade (requested alongside these phases): app content now sits in a shared 1450px-max container (`components/Container.jsx`); dashboard layout rebuilt with a sticky header and a real responsive sidebar that becomes a toggled drawer below the `md` breakpoint instead of just wrapping
+
+Files changed:
+- backend/apps/notifications/{services,serializers,views,urls,test_api,test_triggers}.py, backend/apps/bloodrequests/{workflow,matching}.py, backend/apps/donations/services.py, backend/apps/hospitals/views.py, backend/apps/bloodbanks/views.py, backend/apps/accounts/test_api.py
+- frontend/src/components/{NotificationBell,Container}.jsx, pages/NotificationsPage.jsx, services/notifications.js, layouts/DashboardLayout.jsx, routes/AppRoutes.jsx
+- docs/api-documentation.md, docs/development-progress.md, Agent.md
+
+Tests:
+- Backend: 331 tests pass (21 new: notification API access/filtering/mark-read ownership/admin oversight, and trigger tests for every event above, including that a self-initiated cancel does not self-notify and that decline never notifies)
+- A real bug surfaced by the test run: `transaction.on_commit` for the donor-alert fan-out never fires inside Django's `TestCase` (its outer transaction never actually commits) and was inconsistent with the other `notify()` calls in the same function anyway; moved it inside the transaction like the rest
+- Live smoke test against running Django + MySQL: 8 checks passed end to end (hospital verification notice, donor alerted on request approval, seeker notified, mark-read, cross-user 404); test data removed afterwards
+- Frontend: lint clean, build succeeds. Not exercised in a real browser.
+
+Git commit: see next entry
+Git push: see next entry
+
+Issues / decisions:
+- Donor fan-out on approval is capped at 100 notifications per request to bound bulk writes; not otherwise rate-limited or batched.
+- Email/SMS notifications are explicitly out of scope per Doc.md Phase 10 (future extension).
+- The 1450px/responsive UI request folds Phase 14's concerns into this work rather than waiting; further UI/UX polish (empty/loading states, accessibility pass) is still planned for Phase 14.
+
+---

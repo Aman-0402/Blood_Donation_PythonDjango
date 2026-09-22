@@ -9,7 +9,6 @@ ADMIN_ONLY_ENDPOINTS = [
     '/api/donors/',
     '/api/hospitals/',
     '/api/bloodbanks/',
-    '/api/notifications/',
 ]
 
 

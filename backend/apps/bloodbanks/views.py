@@ -4,6 +4,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from apps.accounts.permissions import IsAdminRole, IsBloodBank
+from apps.notifications.services import notify
 
 from .access import get_bank
 from .models import BloodBank
@@ -69,4 +70,9 @@ class BloodBankViewSet(
         bank = self.get_object()
         bank.user.is_verified = value
         bank.user.save(update_fields=['is_verified', 'updated_at'])
+        notify(
+            bank.user, 'verification',
+            'Your blood bank account has been verified.' if value else 'Your blood bank verification was revoked.',
+            related_object_type='bloodbank', related_object_id=bank.pk,
+        )
         return Response(self.get_serializer(bank).data)

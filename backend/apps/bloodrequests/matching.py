@@ -5,6 +5,7 @@ from django.db.models import Case, IntegerField, Value, When
 from apps.accounts.compatibility import can_donate, donor_groups_for, recipient_groups_for
 from apps.donors.eligibility import compute_eligibility, eligible_donors
 from apps.inventory.services import search_stock
+from apps.notifications.services import notify
 
 from .models import BloodRequest, DonorResponse
 
@@ -43,6 +44,14 @@ def open_requests_for_donor(donor):
     )
 
 
+def eligible_donors_for_request(request):
+    """Eligible, available donors who can safely give to this request's blood group, in its city."""
+    compatible_ids = [g.id for g in donor_groups_for(request.blood_group)]
+    return eligible_donors().filter(
+        blood_group_id__in=compatible_ids, city__iexact=request.city
+    ).select_related('user')
+
+
 def respond_to_request(donor, request_id, answer):
     if answer not in DonorResponse.Answer.values:
         raise ValidationError('Answer must be "accepted" or "declined".')
@@ -69,6 +78,13 @@ def respond_to_request(donor, request_id, answer):
         response, _ = DonorResponse.objects.update_or_create(
             request=request, donor=donor, defaults={'answer': answer}
         )
+        if answer == DonorResponse.Answer.ACCEPTED:
+            donor_name = donor.user.get_full_name() or donor.user.username
+            notify(
+                request.requester, 'donation',
+                f'{donor_name} offered to donate for your request #{request.pk}.',
+                related_object_type='bloodrequest', related_object_id=request.pk,
+            )
     return response
 
 
