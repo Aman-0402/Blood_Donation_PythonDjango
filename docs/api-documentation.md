@@ -208,6 +208,16 @@ Automatic triggers (fired inside the same transaction as the state change, so th
 | A donation is rejected | The donor, with the reason. |
 | A hospital or blood bank is verified or unverified | That organisation's account. |
 
+## Dashboards (Phase 11)
+
+Per-role summary endpoints, all `GET`. Donor and hospital dashboards were introduced in Phases 4 and 6; the three below are new.
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/admin/dashboard/` | admin | `total_users`, `users_by_role`, `total_donors`, `total_hospitals`/`verified_hospitals`, `total_bloodbanks`/`verified_bloodbanks`, `request_counts` (every status), `pending_requests`, `completed_requests`, `donation_counts` (every status), `blood_inventory` (usable units per group, all banks, all 8 groups). |
+| GET | `/requests/dashboard/` | seeker | `request_counts`, `active_requests` (pending/approved/matched/processing), `recent_requests` (5), `unread_notifications`. Hospitals use their own `/hospitals/me/dashboard/` instead (`403` here). |
+| GET | `/bloodbanks/me/dashboard/` | blood bank (any verification state) | `profile`, `stock_by_blood_group`, `expiring_within_7_days` (map of blood_group id to units), `units_collected`/`units_issued`/`units_expired` (all-time, from the ledger), `donation_counts`, `scheduled_donations`, `my_request_counts` (requests this bank fulfilled, by status), `open_requests_for_fulfilment` (unclaimed approved requests, platform-wide), `unread_notifications`. |
+
 ## Reference data and admin lookups (Phase 2, permissions updated in Phase 3)
 
 | Method | Path | Auth | Description |

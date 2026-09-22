@@ -8,6 +8,7 @@ from rest_framework.response import Response
 from apps.accounts.models import Role
 from apps.accounts.permissions import IsAdminRole, role_permission
 from apps.bloodbanks.access import get_bank
+from apps.notifications.models import Notification
 
 from . import fulfillment, matching
 from .models import BloodRequest, DonorResponse
@@ -19,6 +20,11 @@ from .serializers import (
 )
 from .workflow import OWNER_CANCELLABLE, change_status, record_creation
 
+ACTIVE_REQUEST_STATUSES = (
+    BloodRequest.Status.PENDING, BloodRequest.Status.APPROVED,
+    BloodRequest.Status.MATCHED, BloodRequest.Status.PROCESSING,
+)
+IsSeeker = role_permission(Role.SEEKER)
 IsRequester = role_permission(Role.SEEKER, Role.HOSPITAL)
 IsRequesterOrAdmin = role_permission(Role.SEEKER, Role.HOSPITAL, Role.ADMIN)
 IsAnyRequestParty = role_permission(Role.SEEKER, Role.HOSPITAL, Role.ADMIN, Role.BLOODBANK)
@@ -43,6 +49,8 @@ class BloodRequestViewSet(
             return [IsAdminRole()]
         if self.action in BANK_ACTIONS:
             return [IsBank()]
+        if self.action == 'dashboard':
+            return [IsSeeker()]
         if self.action in ('list', 'retrieve'):
             return [IsAnyRequestParty()]
         return [IsRequesterOrAdmin()]
@@ -113,6 +121,21 @@ class BloodRequestViewSet(
     def history(self, request, pk=None):
         instance = self.get_object()
         return Response(RequestStatusHistorySerializer(instance.history.all(), many=True).data)
+
+    @action(detail=False, methods=['get'])
+    def dashboard(self, request):
+        requests = BloodRequest.objects.filter(requester=request.user).select_related(
+            'blood_group', 'fulfilled_by_bloodbank'
+        )
+        counts = {status.value: 0 for status in BloodRequest.Status}
+        for status in requests.values_list('status', flat=True):
+            counts[status] += 1
+        return Response({
+            'request_counts': counts,
+            'active_requests': sum(counts[s.value] for s in ACTIVE_REQUEST_STATUSES),
+            'recent_requests': self.get_serializer(requests[:5], many=True).data,
+            'unread_notifications': Notification.objects.filter(user=request.user, is_read=False).count(),
+        })
 
     @action(detail=True, methods=['get'])
     def matches(self, request, pk=None):

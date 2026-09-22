@@ -5,6 +5,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from apps.accounts import urls as accounts_urls
+from apps.accounts.dashboard import AdminDashboardView
 
 
 @api_view(['GET'])
@@ -17,6 +18,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/health/', health_check, name='health-check'),
     path('api/auth/', include(accounts_urls.auth_urlpatterns)),
+    path('api/admin/dashboard/', AdminDashboardView.as_view(), name='admin-dashboard'),
     path('api/users/', include(accounts_urls.user_urlpatterns)),
     path('api/blood-groups/', include(accounts_urls.blood_group_urlpatterns)),
     path('api/donors/', include('apps.donors.urls')),

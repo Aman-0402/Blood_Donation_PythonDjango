@@ -3,7 +3,7 @@ import DashboardLayout from '../layouts/DashboardLayout'
 import Home from '../pages/Home'
 import Login from '../pages/Login'
 import Register from '../pages/Register'
-import RoleHome from '../pages/RoleHome'
+import AdminDashboard from '../pages/admin/AdminDashboard'
 import AdminVerification from '../pages/admin/AdminVerification'
 import BankDonations from '../pages/bank/BankDonations'
 import BankHistory from '../pages/bank/BankHistory'
@@ -23,12 +23,13 @@ import RequestDetail from '../pages/requests/RequestDetail'
 import RequestForm from '../pages/requests/RequestForm'
 import RequestList from '../pages/requests/RequestList'
 import SearchPage from '../pages/search/SearchPage'
+import SeekerDashboard from '../pages/seeker/SeekerDashboard'
 import { listBloodBanks, setBloodBankVerified } from '../services/bloodbanks'
 import { listHospitals, setHospitalVerified } from '../services/hospitals'
 import { ROLES } from '../utils/roles'
 import ProtectedRoute from './ProtectedRoute'
 
-function roleRoutes(role, { index = <RoleHome />, children = null } = {}) {
+function roleRoutes(role, { index, children = null } = {}) {
   return (
     <Route element={<ProtectedRoute roles={[role]} />}>
       <Route path={`/${role}`} element={<DashboardLayout />}>
@@ -105,9 +106,9 @@ function AppRoutes() {
       <Route path="/" element={<Home />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
-      {roleRoutes(ROLES.ADMIN, { children: adminChildren })}
+      {roleRoutes(ROLES.ADMIN, { index: <AdminDashboard />, children: adminChildren })}
       {roleRoutes(ROLES.DONOR, { index: <DonorDashboard />, children: donorChildren })}
-      {roleRoutes(ROLES.SEEKER, { children: requesterChildren })}
+      {roleRoutes(ROLES.SEEKER, { index: <SeekerDashboard />, children: requesterChildren })}
       {roleRoutes(ROLES.HOSPITAL, { index: <HospitalDashboard />, children: hospitalChildren })}
       {roleRoutes(ROLES.BLOODBANK, { index: <BankHome />, children: bankChildren })}
       <Route path="*" element={<Navigate to="/" replace />} />

@@ -370,3 +370,34 @@ Issues / decisions:
 - The 1450px/responsive UI request folds Phase 14's concerns into this work rather than waiting; further UI/UX polish (empty/loading states, accessibility pass) is still planned for Phase 14.
 
 ---
+
+## Phase 11 — Dashboards
+
+Status: Completed
+Date: 2026-09-22
+Completed:
+- Admin dashboard: user/donor/hospital/bank counts (with verified sub-counts), request and donation status breakdowns, platform-wide usable inventory
+- Seeker dashboard: own request counts, active requests, recent requests, unread notifications (donor and hospital dashboards already existed from Phases 4 and 6)
+- Blood bank dashboard: ledger-derived collected/issued/expired totals, current stock, expiring-soon map, donation and fulfilled-request counts, count of requests open for any bank to claim
+- Frontend: real Admin and Seeker dashboard pages; bank home page rebuilt on the new dashboard endpoint instead of the bare stock summary; removed the now-unused generic `RoleHome` placeholder
+- Doc.md Phase 11 dashboard list is fully covered (admin, donor, hospital, blood bank); seeker dashboard added too since Doc.md §5 lists it as a required dashboard
+
+Files changed:
+- backend/apps/accounts/{dashboard,test_dashboard}.py, backend/apps/bloodrequests/{views,test_dashboard}.py, backend/apps/bloodbanks/{views,test_dashboard}.py, backend/config/urls.py
+- frontend/src/pages/admin/AdminDashboard.jsx, pages/seeker/SeekerDashboard.jsx, pages/bank/BankHome.jsx, services/{admin,requests,bloodbanks}.js, routes/AppRoutes.jsx (RoleHome.jsx removed)
+- docs/api-documentation.md, docs/development-progress.md, Agent.md
+
+Tests:
+- Backend: 340 tests pass (9 new: admin dashboard access and count accuracy, seeker dashboard scoping, bank dashboard stock/collected/issued/expired/donation/request counts)
+- Two test-fixture bugs caught by the run and fixed, not product bugs: a double-counted inline-created donor in the admin dashboard test, and use of the raw `make_inventory` factory (which bypasses the transaction ledger) where the real collection/issue/expire API calls were needed for `units_collected`/`units_issued`/`units_expired` to be non-zero. A third: the API correctly refuses to collect a batch with an already-past expiry date, so the "simulate an expired batch" test now collects normally and backdates `expiry_date` via the ORM to model time passing.
+- Live smoke test against running Django + MySQL: 7 checks passed (admin/seeker dashboard access, 8-group inventory shape, bank dashboard before and after profile creation); test data removed afterwards
+- Frontend: lint clean, build succeeds. Not exercised in a real browser.
+
+Git commit: see next entry
+Git push: see next entry
+
+Issues / decisions:
+- Kept dashboards to counts and short recent lists per Doc.md's Phase 11 scope; deeper analytics/charts are Phase 13 (Reports).
+- `my_request_counts` on the bank dashboard counts requests this bank has ever fulfilled, not stock movements; `units_*` figures come from the ledger and are exact.
+
+---

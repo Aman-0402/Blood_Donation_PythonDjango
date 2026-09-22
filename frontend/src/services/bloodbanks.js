@@ -20,6 +20,11 @@ export async function updateBankProfile(payload) {
   return data
 }
 
+export async function getBankDashboard() {
+  const { data } = await api.get('/bloodbanks/me/dashboard/')
+  return data
+}
+
 export async function listBloodBanks(params = {}) {
   const { data } = await api.get('/bloodbanks/', { params })
   return data
